@@ -1,0 +1,24 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply m-0 p-0 w-full;
+  }
+  body {
+    @apply antialiased min-h-screen font-dmsans text-gray-900;
+  }
+}
+
+@layer components {
+  .container {
+    @apply max-w-[1280px] mx-auto px-6;
+  }
+  .btn-primary {
+    @apply bg-[#0066FF] text-white rounded-lg hover:bg-blue-600 transition-all duration-200;
+  }
+}
