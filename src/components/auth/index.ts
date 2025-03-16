@@ -6,3 +6,4 @@ export { default as POSVerification } from "./POSVerification";
 export { default as BankRegister } from "./BankRegister";
 export { default as BankDetails } from "./BankDetails";
 export { default as BankVerification } from "./BankVerification";
+export { default as AdminLogin } from "./AdminLogin";

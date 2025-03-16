@@ -21,11 +21,19 @@ const PayInvoice: React.FC = () => {
   const handlePayOnline = () => {
     // Handle online payment logic
     console.log("Processing online payment...");
+    // After successful payment, navigate back to invoice details
+    navigate(-1);
   };
 
   const handleUploadReceipt = () => {
+    if (!selectedFile) {
+      alert("Please select a file first");
+      return;
+    }
     // Handle receipt upload logic
     console.log("Uploading receipt...", selectedFile);
+    // After successful upload, navigate back to invoice details
+    navigate(-1);
   };
 
   return (
@@ -73,26 +81,41 @@ const PayInvoice: React.FC = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="mt-8 flex items-center gap-4">
-        <button
-          onClick={handlePayOnline}
-          className="px-6 py-2 bg-[#4400B8] text-white rounded-lg text-sm font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50"
-        >
-          Pay Online
-        </button>
-        <label
-          htmlFor="receipt-upload"
-          className="px-6 py-2 border border-[#4400B8] text-[#4400B8] rounded-lg text-sm font-medium hover:bg-[#4400B8]/5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50"
-        >
-          Upload Offline Receipt
-          <input
-            id="receipt-upload"
-            type="file"
-            className="hidden"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={handleFileChange}
-          />
-        </label>
+      <div className="mt-8 space-y-4">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handlePayOnline}
+            className="px-6 py-2 bg-[#4400B8] text-white rounded-lg text-sm font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50"
+          >
+            Pay Online
+          </button>
+          <label
+            htmlFor="receipt-upload"
+            className="px-6 py-2 border border-[#4400B8] text-[#4400B8] rounded-lg text-sm font-medium hover:bg-[#4400B8]/5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50"
+          >
+            Upload Offline Receipt
+            <input
+              id="receipt-upload"
+              type="file"
+              className="hidden"
+              accept=".pdf,.jpg,.jpeg,.png"
+              onChange={handleFileChange}
+            />
+          </label>
+        </div>
+        {selectedFile && (
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-gray-600">
+              Selected file: {selectedFile.name}
+            </p>
+            <button
+              onClick={handleUploadReceipt}
+              className="px-4 py-1.5 bg-[#4400B8] text-white rounded-lg text-sm font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50"
+            >
+              Submit Receipt
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

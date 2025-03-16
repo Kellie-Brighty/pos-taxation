@@ -7,6 +7,7 @@ import {
   POSVerification,
   BankDetails,
   BankVerification,
+  AdminLogin,
 } from "./components/auth";
 import {
   Dashboard,
@@ -22,6 +23,13 @@ import {
   AddPOSAgent,
   InvoiceDetails,
   PayInvoice,
+  AdminDashboard,
+  AdminDashboardLayout,
+  InvoiceManagement,
+  PaymentsManagement,
+  ReportsManagement,
+  BankSubmissionsManagement,
+  BankSubmissionDetails,
 } from "./components/dashboard";
 import { LandingPage } from "./pages";
 
@@ -30,6 +38,27 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+
+        {/* Admin Dashboard Routes */}
+        <Route path="/admin/dashboard" element={<AdminDashboardLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="invoice-management" element={<InvoiceManagement />} />
+          <Route
+            path="bank-submissions"
+            element={<BankSubmissionsManagement />}
+          />
+          <Route
+            path="bank-submissions/:id"
+            element={<BankSubmissionDetails />}
+          />
+          <Route path="payments" element={<PaymentsManagement />} />
+          <Route path="reports" element={<ReportsManagement />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="support" element={<Settings />} />
+        </Route>
+
+        {/* Registration Routes */}
         <Route path="/register" element={<SelectRegistrationType />} />
         <Route path="/register/bank/new" element={<BankRegister />} />
         <Route path="/register/bank/details" element={<BankDetails />} />
