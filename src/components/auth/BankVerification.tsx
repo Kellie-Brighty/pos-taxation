@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const POSVerification: React.FC = () => {
+const BankVerification: React.FC = () => {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -55,7 +55,7 @@ const POSVerification: React.FC = () => {
               <div className="space-y-8">
                 <p className="text-[#4400B8] text-sm">POS Taxation</p>
                 <Link
-                  to="/register/pos/business"
+                  to="/register/bank/details"
                   className="text-[#4400B8] text-sm flex items-center gap-2"
                 >
                   <svg
@@ -77,11 +77,11 @@ const POSVerification: React.FC = () => {
               <div className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-[28px] font-bold text-[#4400B8]">
-                    Verify Your Identity
+                    Secure Your Account
                   </h1>
                   <p className="text-gray-600 text-sm">
                     We've sent a 6-digit verification code to your registered
-                    phone number. Enter it below to continue.
+                    email. Enter it below to continue.
                   </p>
                 </div>
 
@@ -139,11 +139,11 @@ const POSVerification: React.FC = () => {
         <div className="h-full flex items-center p-8 lg:p-12 xl:p-16">
           <div className="max-w-[480px] space-y-6">
             <h2 className="text-[48px] leading-tight font-bold text-white">
-              Register Your POS Business for Tax Compliance
+              Register Your Bank for POS Tax Automation
             </h2>
             <p className="text-white/90 text-xl leading-relaxed">
-              Stay compliant with tax regulations. Sign up today and manage your
-              taxes with ease.
+              Ensure seamless tax deductions for your POS agents. Sign up today
+              to simplify compliance and financial management.
             </p>
           </div>
         </div>
@@ -154,16 +154,33 @@ const POSVerification: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full space-y-6">
             <div className="text-center space-y-4">
+              <div className="flex justify-center mb-2">
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="text-[#4400B8]"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
               <h2 className="text-2xl font-bold text-[#4400B8]">
-                You're All Set!
+                Your Bank Is Registered!
               </h2>
               <p className="text-gray-600">
-                Your account is now active. You can track your earnings, view
-                tax deductions, and stay compliant with ease.
+                You can now manage POS agent transactions, track tax deductions,
+                and ensure compliance effortlessly.
               </p>
             </div>
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/bank/dashboard")}
               className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base flex items-center justify-center gap-2"
             >
               Go to Dashboard
@@ -172,12 +189,8 @@ const POSVerification: React.FC = () => {
                 height="20"
                 viewBox="0 0 20 20"
                 fill="currentColor"
-                className="transform rotate-180"
               >
-                <path
-                  fillRule="evenodd"
-                  d="M9.707 4.293a1 1 0 0 1 0 1.414L6.414 9H17a1 1 0 1 1 0 2H6.414l3.293 3.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z"
-                />
+                <path d="M10 3.333L8.825 4.508l4.175 4.175H3.333v1.634h9.667l-4.175 4.175L10 15.667l6.667-6.667L10 3.333z" />
               </svg>
             </button>
           </div>
@@ -187,4 +200,4 @@ const POSVerification: React.FC = () => {
   );
 };
 
-export default POSVerification;
+export default BankVerification;

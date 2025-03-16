@@ -1,12 +1,28 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import {
   SelectRegistrationType,
-  Register,
+  BankRegister,
   POSRegister,
   POSBusinessInfo,
   POSVerification,
+  BankDetails,
+  BankVerification,
 } from "./components/auth";
-import { Dashboard, DashboardLayout } from "./components/dashboard";
+import {
+  Dashboard,
+  DashboardLayout,
+  TaxSummary,
+  InvoicesReceipts,
+  Settings,
+  BankDashboard,
+  BankDashboardLayout,
+  SubmitTaxReport,
+  TaxDeductions,
+  POSAgents,
+  AddPOSAgent,
+  InvoiceDetails,
+  PayInvoice,
+} from "./components/dashboard";
 import { LandingPage } from "./pages";
 
 function App() {
@@ -15,7 +31,12 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/register" element={<SelectRegistrationType />} />
-        <Route path="/register/bank" element={<Register />} />
+        <Route path="/register/bank/new" element={<BankRegister />} />
+        <Route path="/register/bank/details" element={<BankDetails />} />
+        <Route
+          path="/register/bank/verification"
+          element={<BankVerification />}
+        />
         <Route path="/register/pos" element={<POSRegister />} />
         <Route path="/register/pos/business" element={<POSBusinessInfo />} />
         <Route
@@ -23,10 +44,25 @@ function App() {
           element={<POSVerification />}
         />
 
-        {/* Dashboard Routes */}
+        {/* Bank Dashboard Routes */}
+        <Route path="/bank/dashboard" element={<BankDashboardLayout />}>
+          <Route index element={<BankDashboard />} />
+          <Route path="tax-report" element={<SubmitTaxReport />} />
+          <Route path="tax-deductions" element={<TaxDeductions />} />
+          <Route path="invoices" element={<InvoicesReceipts />} />
+          <Route path="pos-agents" element={<POSAgents />} />
+          <Route path="pos-agents/add" element={<AddPOSAgent />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="invoices/:id" element={<InvoiceDetails />} />
+          <Route path="invoices/:id/pay" element={<PayInvoice />} />
+        </Route>
+
+        {/* POS Dashboard Routes */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
-          {/* Add other dashboard routes here */}
+          <Route path="tax-summary" element={<TaxSummary />} />
+          <Route path="invoices" element={<InvoicesReceipts />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </Router>

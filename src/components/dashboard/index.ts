@@ -1,3 +1,14 @@
 export { default as Dashboard } from "./Dashboard";
 export { default as DashboardLayout } from "./DashboardLayout";
 export { default as Sidebar } from "./Sidebar";
+export { default as TaxSummary } from "./TaxSummary";
+export { default as TaxDeductions } from "./TaxDeductions";
+export { default as InvoicesReceipts } from "./InvoicesReceipts";
+export { default as Settings } from "./Settings";
+export { default as BankDashboard } from "./BankDashboard";
+export { default as BankDashboardLayout } from "./BankDashboardLayout";
+export { default as SubmitTaxReport } from "./SubmitTaxReport";
+export { default as POSAgents } from "./POSAgents";
+export { default as AddPOSAgent } from "./AddPOSAgent";
+export { default as InvoiceDetails } from "./InvoiceDetails";
+export { default as PayInvoice } from "./PayInvoice";

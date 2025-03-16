@@ -1,47 +1,14 @@
 import React from "react";
 
-interface StatCardProps {
-  title: string;
-  value: string;
-  change: {
-    value: string;
-    type: "up" | "down";
-    period: string;
-  };
-  icon: React.ReactNode;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon }) => {
-  const changeColor =
-    change.type === "up" ? "text-[#00B087]" : "text-[#FF3B3B]";
-
-  return (
-    <div className="bg-white rounded-xl p-6 space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-600">{title}</p>
-        {icon}
-      </div>
-      <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
-      <div className="flex items-center gap-1.5">
-        <span className={changeColor}>
-          {change.type === "up" ? "↑" : "↓"} {change.value}
-        </span>
-        <span className="text-sm text-gray-500">{change.period}</span>
-      </div>
-    </div>
-  );
-};
-
 interface Transaction {
   date: string;
   amount: string;
   taxDeducted: string;
   netEarnings: string;
   status: "Paid" | "Pending" | "Rejected";
-  referenceId: string;
 }
 
-const Dashboard: React.FC = () => {
+const TaxSummary: React.FC = () => {
   const transactions: Transaction[] = [
     {
       date: "12.09.2019",
@@ -49,7 +16,6 @@ const Dashboard: React.FC = () => {
       taxDeducted: "₦2,000",
       netEarnings: "₦15,000",
       status: "Paid",
-      referenceId: "TXN12345",
     },
     {
       date: "12.09.2019",
@@ -57,7 +23,6 @@ const Dashboard: React.FC = () => {
       taxDeducted: "₦1,500",
       netEarnings: "₦16,500",
       status: "Pending",
-      referenceId: "TXN67890",
     },
     {
       date: "12.09.2019",
@@ -65,7 +30,20 @@ const Dashboard: React.FC = () => {
       taxDeducted: "₦2,500",
       netEarnings: "₦18,000",
       status: "Rejected",
-      referenceId: "TXN89900",
+    },
+    {
+      date: "12.09.2019",
+      amount: "₦1,000",
+      taxDeducted: "₦2,500",
+      netEarnings: "₦18,000",
+      status: "Rejected",
+    },
+    {
+      date: "12.09.2019",
+      amount: "₦1,000",
+      taxDeducted: "₦2,500",
+      netEarnings: "₦18,000",
+      status: "Rejected",
     },
   ];
 
@@ -139,107 +117,40 @@ const Dashboard: React.FC = () => {
         <div className="space-y-6 md:space-y-8">
           {/* Page Title */}
           <h1 className="text-xl md:text-2xl font-bold text-gray-900">
-            Dashboard
+            Transactions
           </h1>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            <StatCard
-              title="Total Earnings"
-              value="₦ 500,000"
-              change={{
-                value: "8.5%",
-                type: "up",
-                period: "Up from last month",
-              }}
-              icon={
-                <div className="w-10 h-10 rounded-lg bg-[#4400B8]/10 flex items-center justify-center">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="#4400B8"
-                  >
-                    <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V3H8.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H6.04c.1 1.7 1.36 2.66 2.86 2.97V17h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z" />
-                  </svg>
-                </div>
-              }
-            />
-            <StatCard
-              title="Total Tax Deducted"
-              value="₦ 25,000"
-              change={{
-                value: "1.3%",
-                type: "up",
-                period: "Up from past week",
-              }}
-              icon={
-                <div className="w-10 h-10 rounded-lg bg-[#FFB800]/10 flex items-center justify-center">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="#FFB800"
-                  >
-                    <path d="M17 3H3c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 12H3V5h14v10zM9 8H7v6h2V8zm4-3h-2v9h2V5zm4 6h-2v3h2v-3z" />
-                  </svg>
-                </div>
-              }
-            />
-            <StatCard
-              title="Pending Deductions"
-              value="₦ 5,000"
-              change={{
-                value: "4.3%",
-                type: "down",
-                period: "Down from yesterday",
-              }}
-              icon={
-                <div className="w-10 h-10 rounded-lg bg-[#FF8A00]/10 flex items-center justify-center">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="#FF8A00"
-                  >
-                    <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
-                  </svg>
-                </div>
-              }
-            />
-            <StatCard
-              title="Compliance Score"
-              value="85%"
-              change={{ value: "Good", type: "up", period: "" }}
-              icon={
-                <div className="w-10 h-10 rounded-lg bg-[#00B087]/10 flex items-center justify-center">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="#00B087"
-                  >
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
-                  </svg>
-                </div>
-              }
-            />
-          </div>
-
-          {/* Transactions Section */}
-          <div className="bg-white rounded-xl">
-            <div className="p-4 md:p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                  Transactions
-                </h2>
-                <select className="px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4400B8]/20">
-                  <option>October</option>
-                  <option>November</option>
-                  <option>December</option>
+          {/* Filter Section */}
+          <div className="bg-white rounded-lg p-4">
+            <div className="flex flex-wrap gap-4">
+              <div className="flex items-center gap-2">
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  className="text-gray-400"
+                >
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V4z" />
+                </svg>
+                <span className="text-sm text-gray-600">Filter By</span>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <select className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4400B8]/20">
+                  <option>Date</option>
                 </select>
+                <select className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#4400B8]/20">
+                  <option>Order Status</option>
+                </select>
+                <button className="text-[#FF3B3B] text-sm font-medium hover:opacity-80 transition-opacity flex items-center gap-1">
+                  Reset Filter
+                </button>
               </div>
             </div>
+          </div>
+
+          {/* Transactions Table */}
+          <div className="bg-white rounded-xl">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -258,9 +169,6 @@ const Dashboard: React.FC = () => {
                     </th>
                     <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs md:text-sm font-medium text-gray-500">
                       Status
-                    </th>
-                    <th className="px-4 md:px-6 py-3 md:py-4 text-left text-xs md:text-sm font-medium text-gray-500">
-                      Reference ID
                     </th>
                   </tr>
                 </thead>
@@ -288,9 +196,6 @@ const Dashboard: React.FC = () => {
                           {transaction.status}
                         </span>
                       </td>
-                      <td className="px-4 md:px-6 py-3 md:py-4 text-xs md:text-sm text-gray-900">
-                        {transaction.referenceId}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -316,4 +221,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default TaxSummary;

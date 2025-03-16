@@ -33,7 +33,7 @@ const SelectRegistrationType: React.FC = () => {
             </div>
 
             {/* Selection Section */}
-            <div className="space-y-6">
+            <div>
               <div className="space-y-1">
                 <h1 className="text-[28px] font-bold text-[#4400B8]">
                   Choose Registration Type
@@ -43,15 +43,15 @@ const SelectRegistrationType: React.FC = () => {
                 </p>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 mt-6">
                 <button
-                  onClick={() => navigate("/register/bank")}
+                  onClick={() => navigate("/register/bank/new")}
                   className="w-full bg-white hover:bg-gray-50 text-[#4400B8] py-6 px-6 rounded-lg transition-colors text-base border-2 border-[#4400B8] flex flex-col items-start space-y-1"
                 >
                   <span className="font-semibold text-lg">
                     Bank Registration
                   </span>
-                  <span className="text-sm text-gray-600 text-left ">
+                  <span className="text-sm text-gray-600 text-left">
                     Register your bank for POS tax automation and management
                   </span>
                 </button>
@@ -63,7 +63,7 @@ const SelectRegistrationType: React.FC = () => {
                   <span className="font-semibold text-lg">
                     POS Business Registration
                   </span>
-                  <span className="text-sm text-gray-600 text-left ">
+                  <span className="text-sm text-gray-600 text-left">
                     Register your POS business for tax compliance
                   </span>
                 </button>
@@ -74,8 +74,8 @@ const SelectRegistrationType: React.FC = () => {
       </div>
 
       {/* Right Section - Purple Background */}
-      <div className="hidden lg:block bg-[#4400B8] p-8 lg:p-12 xl:p-16">
-        <div className="h-full flex items-center">
+      <div className="hidden lg:block bg-[#4400B8] fixed top-0 right-0 w-1/2 h-screen">
+        <div className="h-full flex items-center p-8 lg:p-12 xl:p-16">
           <div className="max-w-[480px] space-y-6">
             <h2 className="text-[48px] leading-tight font-bold text-white">
               Choose Your Registration Path
