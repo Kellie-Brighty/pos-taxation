@@ -1,10 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
+interface BasicInfo {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+}
 
 const POSRegister: React.FC = () => {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState<BasicInfo>({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+  });
 
-  const handleContinue = () => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Store basic info in localStorage for next step
+    localStorage.setItem("pos_basic_info", JSON.stringify(formData));
     navigate("/register/pos/business");
   };
 
@@ -38,7 +60,7 @@ const POSRegister: React.FC = () => {
               </div>
 
               {/* Form Section */}
-              <div className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-[28px] font-bold text-[#4400B8]">
                     Basic Information
@@ -49,59 +71,69 @@ const POSRegister: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="fullName"
-                      className="block text-sm font-medium text-gray-700"
-                    >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Full Name
                     </label>
                     <input
                       type="text"
-                      id="fullName"
-                      placeholder="Heritage"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                      name="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                      placeholder="Enter your full name"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="email"
-                      className="block text-sm font-medium text-gray-700"
-                    >
-                      Email
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email Address
                     </label>
                     <input
                       type="email"
-                      id="email"
-                      placeholder="Enter email"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                      placeholder="Enter your email address"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="phoneNumber"
-                      className="block text-sm font-medium text-gray-700"
-                    >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Phone Number
                     </label>
                     <input
                       type="tel"
-                      id="phoneNumber"
-                      placeholder="Enter Phone number"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                      placeholder="Enter your phone number"
                     />
                   </div>
-
-                  <button
-                    onClick={handleContinue}
-                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base mt-2"
-                  >
-                    Continue Registration
-                  </button>
                 </div>
-              </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base"
+                >
+                  Continue Registration
+                </button>
+
+                <p className="text-sm text-gray-600 text-center">
+                  Already have an account?{" "}
+                  <Link
+                    to="/login"
+                    className="text-[#4400B8] font-medium hover:underline"
+                  >
+                    Sign in
+                  </Link>
+                </p>
+              </form>
             </div>
           </div>
         </div>

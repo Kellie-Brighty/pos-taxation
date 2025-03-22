@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {  Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 const NavItem = ({
   item,
@@ -35,6 +35,7 @@ const NavItem = ({
 const BankDashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navigation = [
     {
@@ -236,7 +237,10 @@ const BankDashboardLayout: React.FC = () => {
             <button
               onClick={() => {
                 setIsSidebarOpen(false);
-                // Handle logout
+                localStorage.clear();
+                sessionStorage.clear();
+                // Navigate to the registration type selection page
+                navigate("/register");
               }}
               className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10 w-full"
             >

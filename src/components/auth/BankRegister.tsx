@@ -1,14 +1,62 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "../common/Toast";
+
+interface BankBasicInfo {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+}
 
 const BankRegister: React.FC = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [formData, setFormData] = useState<BankBasicInfo>({
+    fullName: "",
+    email: "",
+    phoneNumber: "",
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically handle form submission
-    // For now, we'll navigate to bank details
-    navigate("/register/bank/details");
+    setIsLoading(true);
+
+    try {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        showToast("Please enter a valid email address", "error");
+        return;
+      }
+
+      // Validate phone number (basic validation)
+      if (formData.phoneNumber.length < 10) {
+        showToast("Please enter a valid phone number", "error");
+        return;
+      }
+
+      // Store data in localStorage
+      localStorage.setItem("bankBasicInfo", JSON.stringify(formData));
+      
+      // Navigate to bank details page
+      navigate("/register/bank/details");
+    } catch (error: any) {
+      showToast(
+        error.message || "An error occurred. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -62,6 +110,8 @@ const BankRegister: React.FC = () => {
                     <input
                       type="text"
                       id="fullName"
+                      value={formData.fullName}
+                      onChange={handleChange}
                       placeholder="Mr. Ademola Ayo"
                       required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
@@ -70,14 +120,16 @@ const BankRegister: React.FC = () => {
 
                   <div className="space-y-2">
                     <label
-                      htmlFor="workEmail"
+                      htmlFor="email"
                       className="block text-sm font-medium text-gray-700"
                     >
                       Work Email Address
                     </label>
                     <input
                       type="email"
-                      id="workEmail"
+                      id="email"
+                      value={formData.email}
+                      onChange={handleChange}
                       placeholder="Enter work email"
                       required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
@@ -94,6 +146,8 @@ const BankRegister: React.FC = () => {
                     <input
                       type="tel"
                       id="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={handleChange}
                       placeholder="Enter Phone number"
                       required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
@@ -102,9 +156,36 @@ const BankRegister: React.FC = () => {
 
                   <button
                     type="submit"
-                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base"
+                    disabled={isLoading}
+                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Continue Registration
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      "Continue Registration"
+                    )}
                   </button>
                 </div>
               </form>

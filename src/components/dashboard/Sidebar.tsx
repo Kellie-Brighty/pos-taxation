@@ -58,11 +58,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Here you would typically clear any auth tokens or user data
+    // Clear auth tokens and user data
     localStorage.clear();
     sessionStorage.clear();
-    // Navigate to the registration type selection page
-    navigate("/register");
+    // Navigate to the login page
+    navigate("/login");
   };
 
   return (

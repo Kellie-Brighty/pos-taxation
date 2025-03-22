@@ -1,13 +1,12 @@
 import React, { useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "../common/Toast";
 import { authService } from "../../services/auth.service";
 
-interface RegistrationResponse {
+interface VerificationResponse {
   success: boolean;
   message: string;
   data?: {
-    userId: string;
     token: string;
     user: {
       id: string;
@@ -17,7 +16,7 @@ interface RegistrationResponse {
   };
 }
 
-const POSVerification: React.FC = () => {
+const OTPVerification: React.FC = () => {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,32 +25,41 @@ const POSVerification: React.FC = () => {
   const { showToast } = useToast();
 
   const handleChange = (index: number, value: string) => {
-    if (value.length > 1) return; // Prevent multiple digits
-
+    if (value.length > 1) return;
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Move to next input if value is entered
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // If all digits are filled, proceed with verification
     if (index === 5 && value) {
       const otpValue = [...newOtp.slice(0, 5), value].join("");
       handleVerification(otpValue);
     }
   };
 
+  const getDashboardPath = (userType: string) => {
+    switch (userType.toLowerCase()) {
+      case "bank":
+        return "/bank/dashboard";
+      case "pos_agent":
+        return "/dashboard";
+      case "admin":
+        return "/admin/dashboard";
+      default:
+        return "/dashboard";
+    }
+  };
+
   const handleVerification = async (otpValue: string) => {
     setIsLoading(true);
-    const email = localStorage.getItem("registrationEmail");
-    const userId = localStorage.getItem("pendingUserId");
+    const email = localStorage.getItem("loginEmail");
 
-    if (!email || !userId) {
-      showToast("Session expired. Please register again.", "error");
-      navigate("/register/pos");
+    if (!email) {
+      showToast("Session expired. Please login again.", "error");
+      navigate("/login");
       return;
     }
 
@@ -59,31 +67,23 @@ const POSVerification: React.FC = () => {
       const response = (await authService.verifyOTP({
         email,
         otp: otpValue,
-      })) as RegistrationResponse;
+      })) as VerificationResponse;
 
       if (response.success) {
         showToast(response.message, "success");
         setShowSuccessModal(true);
-        // Clean up storage
-        localStorage.removeItem("registrationEmail");
-        localStorage.removeItem("pendingUserId");
-        // Store auth token if provided
+        localStorage.removeItem("loginEmail");
         if (response.data?.token) {
-          localStorage.setItem("pos_auth_token", response.data.token);
-          localStorage.setItem("pos_user", JSON.stringify(response.data.user));
+          localStorage.setItem("auth_token", response.data.token);
+          localStorage.setItem("user", JSON.stringify(response.data.user));
         }
       } else {
         showToast(response.message, "error");
-        // Reset OTP fields on error
         setOtp(Array(6).fill(""));
         inputRefs.current[0]?.focus();
       }
     } catch (error: any) {
-      showToast(
-        error.message || "Verification failed. Please try again.",
-        "error"
-      );
-      // Reset OTP fields on error
+      showToast(error.message || "Verification failed", "error");
       setOtp(Array(6).fill(""));
       inputRefs.current[0]?.focus();
     } finally {
@@ -92,10 +92,10 @@ const POSVerification: React.FC = () => {
   };
 
   const handleResendOTP = async () => {
-    const email = localStorage.getItem("registrationEmail");
+    const email = localStorage.getItem("loginEmail");
     if (!email) {
-      showToast("Session expired. Please register again.", "error");
-      navigate("/register/pos");
+      showToast("Session expired. Please login again.", "error");
+      navigate("/login");
       return;
     }
 
@@ -103,10 +103,7 @@ const POSVerification: React.FC = () => {
       const response = await authService.resendOTP({ email });
       showToast(response.message, "info");
     } catch (error: any) {
-      showToast(
-        error.message || "Failed to resend code. Please try again.",
-        "error"
-      );
+      showToast(error.message || "Failed to resend code", "error");
     }
   };
 
@@ -114,7 +111,6 @@ const POSVerification: React.FC = () => {
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>
   ) => {
-    // Move to previous input on backspace if current input is empty
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -122,42 +118,20 @@ const POSVerification: React.FC = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* Left Section - Scrollable */}
       <div className="min-h-screen overflow-y-auto">
         <div className="p-8 lg:p-12 xl:p-16">
           <div className="max-w-[440px] mx-auto">
-            {/* Back Link and Brand */}
             <div className="space-y-16">
-              <div className="space-y-8">
-                <p className="text-[#4400B8] text-sm">POS Taxation</p>
-                <Link
-                  to="/register/pos/business"
-                  className="text-[#4400B8] text-sm flex items-center gap-2"
-                >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.707 4.293a1 1 0 0 1 0 1.414L6.414 9H17a1 1 0 1 1 0 2H6.414l3.293 3.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z"
-                    />
-                  </svg>
-                  Back
-                </Link>
-              </div>
+              <p className="text-[#4400B8] text-sm">POS Taxation</p>
 
-              {/* Form Section */}
               <div className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-[28px] font-bold text-[#4400B8]">
                     Verify Your Email
                   </h1>
                   <p className="text-gray-600 text-sm">
-                    We've sent a 6-digit verification code to your registered
-                    email address. Enter it below to continue.
+                    We've sent a 6-digit verification code to your email. Enter
+                    it below to continue.
                   </p>
                 </div>
 
@@ -242,22 +216,19 @@ const POSVerification: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Section - Fixed */}
       <div className="hidden lg:block bg-[#4400B8] fixed top-0 right-0 w-1/2 h-screen">
         <div className="h-full flex items-center p-8 lg:p-12 xl:p-16">
           <div className="max-w-[480px] space-y-6">
             <h2 className="text-[48px] leading-tight font-bold text-white">
-              Register Your POS Business for Tax Compliance
+              Welcome Back to POS Taxation
             </h2>
             <p className="text-white/90 text-xl leading-relaxed">
-              Stay compliant with tax regulations. Sign up today and manage your
-              taxes with ease.
+              Complete verification to access your account.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full space-y-6">
@@ -278,15 +249,17 @@ const POSVerification: React.FC = () => {
                 </div>
               </div>
               <h2 className="text-2xl font-bold text-[#4400B8]">
-                Email Verified Successfully!
+                Verification Successful!
               </h2>
               <p className="text-gray-600">
-                Your email has been verified. You can now access your dashboard
-                to manage your POS tax compliance.
+                Your email has been verified. You can now access your dashboard.
               </p>
             </div>
             <button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => {
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                navigate(getDashboardPath(user.userType));
+              }}
               className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base flex items-center justify-center gap-2"
             >
               Go to Dashboard
@@ -310,4 +283,4 @@ const POSVerification: React.FC = () => {
   );
 };
 
-export default POSVerification;
+export default OTPVerification;

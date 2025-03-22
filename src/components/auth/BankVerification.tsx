@@ -1,11 +1,39 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "../common/Toast";
+import { authService } from "../../services/auth.service";
+
+interface RegistrationResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    userId: string;
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      userType: string;
+    };
+  };
+}
 
 const BankVerification: React.FC = () => {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const navigate = useNavigate();
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    // Check if email exists
+    const email = localStorage.getItem("registrationEmail");
+    const userId = localStorage.getItem("pendingUserId");
+    if (!email || !userId) {
+      showToast("Session expired. Please register again.", "error");
+      navigate("/register/bank/new");
+    }
+  }, [navigate, showToast]);
 
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) return; // Prevent multiple digits
@@ -26,12 +54,70 @@ const BankVerification: React.FC = () => {
     }
   };
 
-  const handleVerification = (_otpValue: string) => {
-    // Here you would typically verify the OTP with your backend
-    // For now, we'll just show the success modal
-    setTimeout(() => {
-      setShowSuccessModal(true);
-    }, 1000);
+  const handleVerification = async (otpValue: string) => {
+    setIsLoading(true);
+    const email = localStorage.getItem("registrationEmail");
+    const userId = localStorage.getItem("pendingUserId");
+
+    if (!email || !userId) {
+      showToast("Session expired. Please register again.", "error");
+      navigate("/register/bank/new");
+      return;
+    }
+
+    try {
+      const response = (await authService.verifyOTP({
+        email,
+        otp: otpValue,
+      })) as RegistrationResponse;
+
+      if (response.success) {
+        showToast(response.message, "success");
+        setShowSuccessModal(true);
+        // Clean up storage
+        localStorage.removeItem("registrationEmail");
+        localStorage.removeItem("pendingUserId");
+        // Store auth token if provided
+        if (response.data?.token) {
+          localStorage.setItem("bank_auth_token", response.data.token);
+          localStorage.setItem("bank_user", JSON.stringify(response.data.user));
+        }
+      } else {
+        showToast(response.message, "error");
+        // Reset OTP fields on error
+        setOtp(Array(6).fill(""));
+        inputRefs.current[0]?.focus();
+      }
+    } catch (error: any) {
+      showToast(
+        error.message || "Verification failed. Please try again.",
+        "error"
+      );
+      // Reset OTP fields on error
+      setOtp(Array(6).fill(""));
+      inputRefs.current[0]?.focus();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    const email = localStorage.getItem("registrationEmail");
+    if (!email) {
+      showToast("Session expired. Please register again.", "error");
+      navigate("/register/bank/new");
+      return;
+    }
+
+    try {
+      const response = await authService.resendOTP({ email });
+      showToast(response.message, "info");
+    } catch (error: any) {
+      showToast(
+        error.message || "Failed to resend code. Please try again.",
+        "error"
+      );
+    }
   };
 
   const handleKeyDown = (
@@ -77,7 +163,7 @@ const BankVerification: React.FC = () => {
               <div className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-[28px] font-bold text-[#4400B8]">
-                    Secure Your Account
+                    Verify Your Email
                   </h1>
                   <p className="text-gray-600 text-sm">
                     We've sent a 6-digit verification code to your registered
@@ -106,7 +192,8 @@ const BankVerification: React.FC = () => {
                             ref={(ref) => {
                               inputRefs.current[index] = ref;
                             }}
-                            className="w-12 h-12 text-center text-lg font-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                            disabled={isLoading}
+                            className="w-12 h-12 text-center text-lg font-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                           />
                         ))}
                     </div>
@@ -116,16 +203,47 @@ const BankVerification: React.FC = () => {
                     <p className="text-sm text-gray-600">
                       Didn't receive a code?
                     </p>
-                    <button className="text-sm text-[#4400B8] font-medium hover:opacity-80 transition-opacity">
+                    <button
+                      onClick={handleResendOTP}
+                      disabled={isLoading}
+                      className="text-sm text-[#4400B8] font-medium hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                       Resend OTP
                     </button>
                   </div>
 
                   <button
                     onClick={() => handleVerification(otp.join(""))}
-                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base"
+                    disabled={isLoading || otp.some((digit) => !digit)}
+                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Continue Registration
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Verifying...
+                      </>
+                    ) : (
+                      "Verify Email"
+                    )}
                   </button>
                 </div>
               </div>
@@ -154,29 +272,27 @@ const BankVerification: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full space-y-6">
             <div className="text-center space-y-4">
-              <div className="flex justify-center mb-2">
-                <svg
-                  width="24"
-                  height="24"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  className="text-[#4400B8]"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+              <div className="flex justify-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-green-500"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
               </div>
               <h2 className="text-2xl font-bold text-[#4400B8]">
-                Your Bank Is Registered!
+                Email Verified Successfully!
               </h2>
               <p className="text-gray-600">
-                You can now manage POS agent transactions, track tax deductions,
-                and ensure compliance effortlessly.
+                Your email has been verified. You can now access your dashboard
+                to manage your bank's POS tax compliance.
               </p>
             </div>
             <button
@@ -189,8 +305,12 @@ const BankVerification: React.FC = () => {
                 height="20"
                 viewBox="0 0 20 20"
                 fill="currentColor"
+                className="transform rotate-180"
               >
-                <path d="M10 3.333L8.825 4.508l4.175 4.175H3.333v1.634h9.667l-4.175 4.175L10 15.667l6.667-6.667L10 3.333z" />
+                <path
+                  fillRule="evenodd"
+                  d="M9.707 4.293a1 1 0 0 1 0 1.414L6.414 9H17a1 1 0 1 1 0 2H6.414l3.293 3.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z"
+                />
               </svg>
             </button>
           </div>

@@ -1,11 +1,80 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "../common/Toast";
+import { authService, RegistrationData } from "../../services/auth.service";
+
+interface BusinessInfo {
+  businessName: string;
+  registrationNumber: string;
+  businessAddress: string;
+}
 
 const POSBusinessInfo: React.FC = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<BusinessInfo>({
+    businessName: "",
+    registrationNumber: "",
+    businessAddress: "",
+  });
 
-  const handleContinue = () => {
-    navigate("/register/pos/business/verification");
+  useEffect(() => {
+    // Check if basic info exists
+    const basicInfo = localStorage.getItem("pos_basic_info");
+    if (!basicInfo) {
+      showToast("Please complete your basic information first", "error");
+      navigate("/register/pos");
+    }
+  }, [navigate, showToast]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const basicInfo = JSON.parse(
+        localStorage.getItem("pos_basic_info") || "{}"
+      );
+
+      const registrationData: RegistrationData = {
+        ...basicInfo,
+        ...formData,
+        userType: "pos_agent",
+      };
+
+      const response = await authService.register(registrationData);
+
+      if (response.success) {
+        showToast(response.message, "success");
+        // Store email for OTP verification
+        localStorage.setItem("registrationEmail", basicInfo.email);
+        // Store userId for verification
+        if (response.data?.userId) {
+          localStorage.setItem("pendingUserId", response.data.userId);
+        }
+        // Clean up basic info
+        localStorage.removeItem("pos_basic_info");
+        navigate("/register/pos/business/verification");
+      } else {
+        showToast(response.message, "error");
+      }
+    } catch (error: any) {
+      showToast(
+        error.message || "Registration failed. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -38,71 +107,97 @@ const POSBusinessInfo: React.FC = () => {
               </div>
 
               {/* Form Section */}
-              <div className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-[28px] font-bold text-[#4400B8]">
-                    Set Up Your POS Business
+                    Business Information
                   </h1>
                   <p className="text-gray-600 text-sm">
-                    Provide information about your POS business to ensure smooth
-                    tax processing.
+                    Tell us about your POS business
                   </p>
                 </div>
 
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="businessName"
-                      className="block text-sm font-medium text-gray-700"
-                    >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Business Name
                     </label>
                     <input
                       type="text"
-                      id="businessName"
-                      placeholder="e.g Johns POS Service"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                      name="businessName"
+                      value={formData.businessName}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                      placeholder="Enter your business name"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Registration Number{" "}
-                      <span className="text-gray-500 font-normal">
-                        (If available)
-                      </span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Registration Number
                     </label>
                     <input
                       type="text"
-                      id="registrationNumber"
-                      placeholder="12345678902234"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                      name="registrationNumber"
+                      value={formData.registrationNumber}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                      placeholder="Enter your registration number"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label
-                      htmlFor="businessAddress"
-                      className="block text-sm font-medium text-gray-700"
-                    >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       Business Address
                     </label>
                     <input
                       type="text"
-                      id="businessAddress"
-                      placeholder="25, Awolowo, Ibadan"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                      name="businessAddress"
+                      value={formData.businessAddress}
+                      onChange={handleChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                      placeholder="Enter your business address"
                     />
                   </div>
-
-                  <button
-                    onClick={handleContinue}
-                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base mt-2"
-                  >
-                    Continue Registration
-                  </button>
                 </div>
-              </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <svg
+                        className="animate-spin h-5 w-5 text-white"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Processing...
+                    </>
+                  ) : (
+                    "Complete Registration"
+                  )}
+                </button>
+              </form>
             </div>
           </div>
         </div>

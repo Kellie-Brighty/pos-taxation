@@ -1,14 +1,83 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useToast } from "../common/Toast";
+import { authService, BankRegistrationData } from "../../services/auth.service";
+
+interface BankDetailsInfo {
+  bankName: string;
+  registrationNumber: string;
+  headOfficeAddress: string;
+  numAgents?: number;
+}
 
 const BankDetails: React.FC = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [formData, setFormData] = useState<BankDetailsInfo>({
+    bankName: "",
+    registrationNumber: "",
+    headOfficeAddress: "",
+    numAgents: undefined,
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Check if basic info exists
+    const basicInfo = localStorage.getItem("bankBasicInfo");
+    if (!basicInfo) {
+      showToast("Please complete the basic information first", "error");
+      navigate("/register/bank/new");
+    }
+  }, [navigate, showToast]);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: id === "numAgents" ? (value ? parseInt(value) : undefined) : value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Here you would typically handle form submission
-    // For now, we'll navigate to verification
-    navigate("/register/bank/verification");
+    setIsLoading(true);
+
+    try {
+      const basicInfo = JSON.parse(
+        localStorage.getItem("bankBasicInfo") || "{}"
+      );
+
+      const registrationData: BankRegistrationData = {
+        ...basicInfo,
+        ...formData,
+        userType: "bank",
+      };
+
+      const response = await authService.registerBank(registrationData);
+
+      if (response.success) {
+        // Store email for verification
+        localStorage.setItem("registrationEmail", basicInfo.email);
+        localStorage.setItem("pendingUserId", response.data?.userId || "");
+
+        // Clean up basic info
+        localStorage.removeItem("bankBasicInfo");
+
+        showToast(response.message, "success");
+        navigate("/register/bank/verification");
+      } else {
+        showToast(response.message, "error");
+      }
+    } catch (error: any) {
+      showToast(
+        error.message || "Registration failed. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -63,7 +132,9 @@ const BankDetails: React.FC = () => {
                     <input
                       type="text"
                       id="bankName"
-                      placeholder="e.g John's POS Service"
+                      value={formData.bankName}
+                      onChange={handleChange}
+                      placeholder="e.g First Bank PLC"
                       required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
                     />
@@ -79,6 +150,8 @@ const BankDetails: React.FC = () => {
                     <input
                       type="text"
                       id="registrationNumber"
+                      value={formData.registrationNumber}
+                      onChange={handleChange}
                       placeholder="123456789023234"
                       required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
@@ -92,11 +165,13 @@ const BankDetails: React.FC = () => {
                     >
                       Head Office Address
                     </label>
-                    <input
-                      type="text"
+                    <textarea
                       id="headOfficeAddress"
-                      placeholder="24, Awolowo, Ibadan"
+                      value={formData.headOfficeAddress}
+                      onChange={handleChange}
+                      placeholder="24, Awolowo Road, Ibadan"
                       required
+                      rows={3}
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
                     />
                   </div>
@@ -110,17 +185,47 @@ const BankDetails: React.FC = () => {
                     </label>
                     <input
                       type="number"
-                      id="agentsCount"
+                      id="numAgents"
+                      value={formData.numAgents || ""}
+                      onChange={handleChange}
                       placeholder="72"
+                      min="0"
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base"
+                    disabled={isLoading}
+                    className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    Continue Registration
+                    {isLoading ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      "Complete Registration"
+                    )}
                   </button>
                 </div>
               </form>

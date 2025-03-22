@@ -7,3 +7,5 @@ export { default as BankRegister } from "./BankRegister";
 export { default as BankDetails } from "./BankDetails";
 export { default as BankVerification } from "./BankVerification";
 export { default as AdminLogin } from "./AdminLogin";
+export { default as Login } from "./Login";
+export { default as OTPVerification } from "./OTPVerification";
