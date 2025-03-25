@@ -33,6 +33,8 @@ import {
   ReportsManagement,
   BankSubmissionsManagement,
   BankSubmissionDetails,
+  POSAgents,
+  AddPOSAgent,
 } from "./components/dashboard";
 import { LandingPage } from "./pages";
 
@@ -78,6 +80,9 @@ function App() {
             <Route path="settings" element={<Settings />} />
             <Route path="invoices/:id" element={<InvoiceDetails />} />
             <Route path="invoices/:id/pay" element={<PayInvoice />} />
+            <Route path="pos-agents" element={<POSAgents />} />
+            <Route path="pos-agents/add" element={<AddPOSAgent />} />
+
           </Route>
 
           {/* Removed POS Dashboard Routes */}

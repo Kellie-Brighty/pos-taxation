@@ -47,7 +47,7 @@ const BankDashboard: React.FC = () => {
     {
       title: "Tax Remitted",
       value: "₦ 5,000",
-      subtitle: "Completed 96%",
+      subtitle: "",
       icon: (
         <svg
           className="w-6 h-6 text-rose-500"
@@ -65,9 +65,9 @@ const BankDashboard: React.FC = () => {
       ),
     },
     {
-      title: "Pending Remittance",
+      title: "Projected Remittance",
       value: "₦ 5,000,000",
-      subtitle: "To be processed",
+      subtitle: "",
       icon: (
         <svg
           className="w-6 h-6 text-amber-500"
@@ -163,7 +163,7 @@ const BankDashboard: React.FC = () => {
             </p>
           </div>
           <Link
-            to="/dashboard/pos-agents"
+            to="/bank/dashboard/pos-agents"
             className="text-[#4400B8] text-sm font-medium hover:text-[#4400B8]/90 flex items-center gap-2"
           >
             Manage all POS Agents

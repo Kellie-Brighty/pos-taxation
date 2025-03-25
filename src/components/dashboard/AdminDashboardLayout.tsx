@@ -73,7 +73,7 @@ const AdminDashboardLayout: React.FC = () => {
                 }
                 label="Bank Submissions"
               />
-              <NavItem
+              {/* <NavItem
                 to="/admin/dashboard/invoice-management"
                 icon={
                   <svg
@@ -89,8 +89,8 @@ const AdminDashboardLayout: React.FC = () => {
                   </svg>
                 }
                 label="Invoice Management"
-              />
-              <NavItem
+              /> */}
+              {/* <NavItem
                 to="/admin/dashboard/payments"
                 icon={
                   <svg
@@ -106,7 +106,7 @@ const AdminDashboardLayout: React.FC = () => {
                   </svg>
                 }
                 label="Payments"
-              />
+              /> */}
               <NavItem
                 to="/admin/dashboard/reports"
                 icon={
@@ -131,7 +131,7 @@ const AdminDashboardLayout: React.FC = () => {
               Account
             </p>
             <div className="mt-2 space-y-1">
-              <NavItem
+              {/* <NavItem
                 to="/admin/dashboard/settings"
                 icon={
                   <svg
@@ -146,7 +146,7 @@ const AdminDashboardLayout: React.FC = () => {
                   </svg>
                 }
                 label="Settings"
-              />
+              /> */}
               <NavItem
                 to="/admin/support"
                 icon={
@@ -170,7 +170,7 @@ const AdminDashboardLayout: React.FC = () => {
         {/* Logout */}
         <div className="absolute bottom-0 w-full p-4">
           <Link
-            to="/admin"
+            to="/admin/login"
             className="flex items-center gap-3 px-4 py-2 text-white/80 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">

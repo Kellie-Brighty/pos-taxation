@@ -202,7 +202,7 @@ const AdminDashboard: React.FC = () => {
                 Review agent counts and income reports submitted by banks
               </p>
             </div>
-            <Link
+            {/* <Link
               to="/admin/bank-submissions"
               className="text-sm text-[#4400B8] hover:text-[#4400B8]/80 flex items-center gap-1"
             >
@@ -213,7 +213,7 @@ const AdminDashboard: React.FC = () => {
                   d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
                 />
               </svg>
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -270,7 +270,7 @@ const AdminDashboard: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <Link
-                      to={`/admin/bank-submissions/${submission.id}`}
+                      to={`/admin/dashboard/bank-submissions/${submission.id}`}
                       className="text-[#4400B8] hover:text-[#4400B8]/80 flex items-center gap-1"
                     >
                       View details
