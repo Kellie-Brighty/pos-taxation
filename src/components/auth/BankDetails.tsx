@@ -1,13 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../common/Toast";
-import { authService, BankRegistrationData } from "../../services/auth.service";
+import { authService } from "../../services/auth.service";
 
 interface BankDetailsInfo {
   bankName: string;
   registrationNumber: string;
   headOfficeAddress: string;
-  numAgents?: number;
+  numAgents: string;
+  supportingDocument?: File;
+}
+
+interface BankBasicInfo {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
 }
 
 const BankDetails: React.FC = () => {
@@ -17,28 +24,86 @@ const BankDetails: React.FC = () => {
     bankName: "",
     registrationNumber: "",
     headOfficeAddress: "",
-    numAgents: undefined,
+    numAgents: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // File handling states
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string>("");
 
   useEffect(() => {
-    // Check if basic info exists
     const basicInfo = localStorage.getItem("bankBasicInfo");
     if (!basicInfo) {
-      showToast("Please complete the basic information first", "error");
-      navigate("/register/bank/new");
+      showToast("Please complete your basic information first", "error");
+      navigate("/register");
     }
   }, [navigate, showToast]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [id]: id === "numAgents" ? (value ? parseInt(value) : undefined) : value,
+      [id]: value,
     }));
   };
+
+  const validateFile = (file: File): boolean => {
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "text/csv",
+    ];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    if (!allowedTypes.includes(file.type)) {
+      setFileError("Please upload a PDF, Excel, or CSV file");
+      return false;
+    }
+
+    if (file.size > maxSize) {
+      setFileError("File size should be less than 5MB");
+      return false;
+    }
+
+    setFileError("");
+    return true;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (validateFile(file)) {
+        setSelectedFile(file);
+        setFormData((prev) => ({ ...prev, supportingDocument: file }));
+      }
+    }
+  };
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      if (validateFile(file)) {
+        setSelectedFile(file);
+        setFormData((prev) => ({ ...prev, supportingDocument: file }));
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,34 +112,45 @@ const BankDetails: React.FC = () => {
     try {
       const basicInfo = JSON.parse(
         localStorage.getItem("bankBasicInfo") || "{}"
+      ) as BankBasicInfo;
+
+      // Create FormData for multipart/form-data submission
+      const formDataToSubmit = new FormData();
+
+      // Append basic info fields
+      formDataToSubmit.append("fullName", basicInfo.fullName);
+      formDataToSubmit.append("email", basicInfo.email);
+      formDataToSubmit.append("phoneNumber", basicInfo.phoneNumber);
+
+      // Append bank details fields
+      formDataToSubmit.append("bankName", formData.bankName);
+      formDataToSubmit.append(
+        "registrationNumber",
+        formData.registrationNumber
       );
+      formDataToSubmit.append("headOfficeAddress", formData.headOfficeAddress);
+      formDataToSubmit.append("numAgents", formData.numAgents);
+      formDataToSubmit.append("userType", "bank");
 
-      const registrationData: BankRegistrationData = {
-        ...basicInfo,
-        ...formData,
-        userType: "bank",
-      };
+      // Append file if selected
+      if (selectedFile) {
+        formDataToSubmit.append("supportingDocument", selectedFile);
+      }
 
-      const response = await authService.registerBank(registrationData);
+      const response = await authService.registerBank(formDataToSubmit);
 
       if (response.success) {
-        // Store email for verification
         localStorage.setItem("registrationEmail", basicInfo.email);
         localStorage.setItem("pendingUserId", response.data?.userId || "");
-
-        // Clean up basic info
-        localStorage.removeItem("bankBasicInfo");
+        localStorage.removeItem("bankBasicInfo"); // Clean up basic info
 
         showToast(response.message, "success");
-        navigate("/register/bank/verification");
+        navigate("/register/verification");
       } else {
         showToast(response.message, "error");
       }
     } catch (error: any) {
-      showToast(
-        error.message || "Registration failed. Please try again.",
-        "error"
-      );
+      showToast(error.message || "Registration failed", "error");
     } finally {
       setIsLoading(false);
     }
@@ -82,16 +158,14 @@ const BankDetails: React.FC = () => {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
-      {/* Left Section - Scrollable */}
       <div className="min-h-screen overflow-y-auto">
         <div className="p-8 lg:p-12 xl:p-16">
           <div className="max-w-[440px] mx-auto">
-            {/* Back Link and Brand */}
             <div className="space-y-16">
               <div className="space-y-8">
                 <p className="text-[#4400B8] text-sm">POS Taxation</p>
                 <Link
-                  to="/register/bank/new"
+                  to="/register"
                   className="text-[#4400B8] text-sm flex items-center gap-2"
                 >
                   <svg
@@ -109,15 +183,13 @@ const BankDetails: React.FC = () => {
                 </Link>
               </div>
 
-              {/* Form Section */}
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-[28px] font-bold text-[#4400B8]">
-                    Register Your Bank
+                    Bank Details
                   </h1>
                   <p className="text-gray-600 text-sm">
-                    Enter your bank's details to ensure smooth POS agent tax
-                    remittance.
+                    Provide your bank's information to complete registration.
                   </p>
                 </div>
 
@@ -134,7 +206,7 @@ const BankDetails: React.FC = () => {
                       id="bankName"
                       value={formData.bankName}
                       onChange={handleChange}
-                      placeholder="e.g First Bank PLC"
+                      placeholder="Enter bank name"
                       required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
                     />
@@ -145,14 +217,14 @@ const BankDetails: React.FC = () => {
                       htmlFor="registrationNumber"
                       className="block text-sm font-medium text-gray-700"
                     >
-                      Bank Registration Number
+                      Registration Number
                     </label>
                     <input
                       type="text"
                       id="registrationNumber"
                       value={formData.registrationNumber}
                       onChange={handleChange}
-                      placeholder="123456789023234"
+                      placeholder="Enter registration number"
                       required
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
                     />
@@ -165,33 +237,101 @@ const BankDetails: React.FC = () => {
                     >
                       Head Office Address
                     </label>
-                    <textarea
+                    <input
+                      type="text"
                       id="headOfficeAddress"
                       value={formData.headOfficeAddress}
                       onChange={handleChange}
-                      placeholder="24, Awolowo Road, Ibadan"
+                      placeholder="Enter head office address"
                       required
-                      rows={3}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="numAgents"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Number of POS Agents
+                    </label>
+                    <input
+                      type="number"
+                      id="numAgents"
+                      value={formData.numAgents}
+                      onChange={handleChange}
+                      placeholder="Enter number of agents"
+                      required
+                      min="0"
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Number of POS Agents Managed
-                      <span className="text-gray-500 ml-1">
-                        (Optional, but recommended)
+                      Agents Data
+                      <span className="text-gray-500 text-xs ml-1">
+                        (PDF, Excel, or CSV, max 5MB)
                       </span>
                     </label>
-                    <input
-                      type="number"
-                      id="numAgents"
-                      value={formData.numAgents || ""}
-                      onChange={handleChange}
-                      placeholder="72"
-                      min="0"
-                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
-                    />
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                        isDragging
+                          ? "border-[#4400B8] bg-[#4400B8]/5"
+                          : "border-gray-300 hover:border-[#4400B8]"
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        id="supportingDocument"
+                        onChange={handleFileChange}
+                        accept=".pdf,.csv,.xls,.xlsx"
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="supportingDocument"
+                        className="cursor-pointer"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex justify-center">
+                            <svg
+                              className="w-12 h-12 text-gray-400"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                              />
+                            </svg>
+                          </div>
+                          <div className="text-gray-600">
+                            {selectedFile ? (
+                              <span className="text-[#4400B8]">
+                                {selectedFile.name}
+                              </span>
+                            ) : (
+                              <>
+                                <span className="text-[#4400B8] font-medium">
+                                  Click to upload
+                                </span>{" "}
+                                or drag and drop your list of active POS agents
+                                data
+                              </>
+                            )}
+                          </div>
+                          {fileError && (
+                            <p className="text-red-500 text-sm">{fileError}</p>
+                          )}
+                        </div>
+                      </label>
+                    </div>
                   </div>
 
                   <button
@@ -234,16 +374,15 @@ const BankDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Section - Fixed */}
       <div className="hidden lg:block bg-[#4400B8] fixed top-0 right-0 w-1/2 h-screen">
         <div className="h-full flex items-center p-8 lg:p-12 xl:p-16">
           <div className="max-w-[480px] space-y-6">
             <h2 className="text-[48px] leading-tight font-bold text-white">
-              Register Your Bank for POS Tax Automation
+              Complete Your Bank Registration
             </h2>
             <p className="text-white/90 text-xl leading-relaxed">
-              Ensure seamless tax deductions for your POS agents. Sign up today
-              to simplify compliance and financial management.
+              Provide your bank details to finalize your registration and start
+              managing tax compliance.
             </p>
           </div>
         </div>

@@ -57,12 +57,12 @@ const Header: React.FC<HeaderProps> = ({ onGetStarted }) => {
             >
               Login
             </button>
-            <button
-              onClick={onGetStarted}
+          <button
+            onClick={onGetStarted}
               className="btn-primary text-[15px] font-medium px-6 py-2"
-            >
-              Get Started
-            </button>
+          >
+            Get Started
+          </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -119,34 +119,34 @@ const Header: React.FC<HeaderProps> = ({ onGetStarted }) => {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="flex flex-col gap-4">
-                    <ScrollLink
-                      to="home"
+                <ScrollLink
+                  to="home"
                       className="text-[15px] font-medium text-gray-900 hover:text-[#0066FF] transition-colors py-2"
-                      onClick={closeMenu}
-                    >
-                      Home
-                    </ScrollLink>
-                    <ScrollLink
-                      to="about"
+                  onClick={closeMenu}
+                >
+                  Home
+                </ScrollLink>
+                <ScrollLink
+                  to="about"
                       className="text-[15px] font-medium text-gray-900 hover:text-[#0066FF] transition-colors py-2"
-                      onClick={closeMenu}
-                    >
-                      About
-                    </ScrollLink>
-                    <ScrollLink
-                      to="how-it-works"
+                  onClick={closeMenu}
+                >
+                  About
+                </ScrollLink>
+                <ScrollLink
+                  to="how-it-works"
                       className="text-[15px] font-medium text-gray-900 hover:text-[#0066FF] transition-colors py-2"
-                      onClick={closeMenu}
-                    >
-                      How it works
-                    </ScrollLink>
-                    <ScrollLink
-                      to="contact"
+                  onClick={closeMenu}
+                >
+                  How it works
+                </ScrollLink>
+                <ScrollLink
+                  to="contact"
                       className="text-[15px] font-medium text-gray-900 hover:text-[#0066FF] transition-colors py-2"
-                      onClick={closeMenu}
-                    >
-                      Contact
-                    </ScrollLink>
+                  onClick={closeMenu}
+                >
+                  Contact
+                </ScrollLink>
                   </div>
                 </div>
                 <div className="p-4 space-y-2">
@@ -159,18 +159,18 @@ const Header: React.FC<HeaderProps> = ({ onGetStarted }) => {
                   >
                     Login
                   </button>
-                  <button
-                    onClick={() => {
-                      closeMenu();
-                      onGetStarted();
-                    }}
+                <button
+                  onClick={() => {
+                    closeMenu();
+                    onGetStarted();
+                  }}
                     className="w-full btn-primary text-[15px] font-medium px-6 py-2"
-                  >
-                    Get Started
-                  </button>
-                </div>
+                >
+                  Get Started
+                </button>
               </div>
             </div>
+          </div>
           )}
         </nav>
       </div>

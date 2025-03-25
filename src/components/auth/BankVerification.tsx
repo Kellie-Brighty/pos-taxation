@@ -26,12 +26,11 @@ const BankVerification: React.FC = () => {
   const { showToast } = useToast();
 
   useEffect(() => {
-    // Check if email exists
     const email = localStorage.getItem("registrationEmail");
     const userId = localStorage.getItem("pendingUserId");
     if (!email || !userId) {
       showToast("Session expired. Please register again.", "error");
-      navigate("/register/bank/new");
+      navigate("/register");
     }
   }, [navigate, showToast]);
 
@@ -61,7 +60,7 @@ const BankVerification: React.FC = () => {
 
     if (!email || !userId) {
       showToast("Session expired. Please register again.", "error");
-      navigate("/register/bank/new");
+      navigate("/register");
       return;
     }
 
@@ -105,7 +104,7 @@ const BankVerification: React.FC = () => {
     const email = localStorage.getItem("registrationEmail");
     if (!email) {
       showToast("Session expired. Please register again.", "error");
-      navigate("/register/bank/new");
+      navigate("/register");
       return;
     }
 
@@ -141,7 +140,7 @@ const BankVerification: React.FC = () => {
               <div className="space-y-8">
                 <p className="text-[#4400B8] text-sm">POS Taxation</p>
                 <Link
-                  to="/register/bank/details"
+                  to="/register/details"
                   className="text-[#4400B8] text-sm flex items-center gap-2"
                 >
                   <svg

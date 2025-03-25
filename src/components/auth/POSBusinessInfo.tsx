@@ -63,7 +63,7 @@ const POSBusinessInfo: React.FC = () => {
         }
         // Clean up basic info
         localStorage.removeItem("pos_basic_info");
-        navigate("/register/pos/business/verification");
+    navigate("/register/pos/business/verification");
       } else {
         showToast(response.message, "error");
       }
@@ -81,79 +81,79 @@ const POSBusinessInfo: React.FC = () => {
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2">
       {/* Left Section - Scrollable */}
       <div className="min-h-screen overflow-y-auto">
-        <div className="p-8 lg:p-12 xl:p-16">
-          <div className="max-w-[440px] mx-auto">
-            {/* Back Link and Brand */}
-            <div className="space-y-16">
-              <div className="space-y-8">
-                <p className="text-[#4400B8] text-sm">POS Taxation</p>
-                <Link
-                  to="/register/pos"
-                  className="text-[#4400B8] text-sm flex items-center gap-2"
+      <div className="p-8 lg:p-12 xl:p-16">
+        <div className="max-w-[440px] mx-auto">
+          {/* Back Link and Brand */}
+          <div className="space-y-16">
+            <div className="space-y-8">
+              <p className="text-[#4400B8] text-sm">POS Taxation</p>
+              <Link
+                to="/register/pos"
+                className="text-[#4400B8] text-sm flex items-center gap-2"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M9.707 4.293a1 1 0 0 1 0 1.414L6.414 9H17a1 1 0 1 1 0 2H6.414l3.293 3.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z"
-                    />
-                  </svg>
-                  Back
-                </Link>
+                  <path
+                    fillRule="evenodd"
+                    d="M9.707 4.293a1 1 0 0 1 0 1.414L6.414 9H17a1 1 0 1 1 0 2H6.414l3.293 3.293a1 1 0 0 1-1.414 1.414l-5-5a1 1 0 0 1 0-1.414l5-5a1 1 0 0 1 1.414 0z"
+                  />
+                </svg>
+                Back
+              </Link>
+            </div>
+
+            {/* Form Section */}
+              <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-1">
+                <h1 className="text-[28px] font-bold text-[#4400B8]">
+                    Business Information
+                </h1>
+                <p className="text-gray-600 text-sm">
+                    Tell us about your POS business
+                </p>
               </div>
 
-              {/* Form Section */}
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-1">
-                  <h1 className="text-[28px] font-bold text-[#4400B8]">
-                    Business Information
-                  </h1>
-                  <p className="text-gray-600 text-sm">
-                    Tell us about your POS business
-                  </p>
-                </div>
-
-                <div className="space-y-4">
+              <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Business Name
-                    </label>
-                    <input
-                      type="text"
+                    Business Name
+                  </label>
+                  <input
+                    type="text"
                       name="businessName"
                       value={formData.businessName}
                       onChange={handleChange}
                       required
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
                       placeholder="Enter your business name"
-                    />
-                  </div>
+                  />
+                </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Registration Number
-                    </label>
-                    <input
-                      type="text"
+                  </label>
+                  <input
+                    type="text"
                       name="registrationNumber"
                       value={formData.registrationNumber}
                       onChange={handleChange}
                       required
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
                       placeholder="Enter your registration number"
-                    />
-                  </div>
+                  />
+                </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Business Address
-                    </label>
-                    <input
-                      type="text"
+                    Business Address
+                  </label>
+                  <input
+                    type="text"
                       name="businessAddress"
                       value={formData.businessAddress}
                       onChange={handleChange}

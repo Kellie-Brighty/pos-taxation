@@ -38,22 +38,14 @@ const BankRegister: React.FC = () => {
         return;
       }
 
-      // Validate phone number (basic validation)
-      if (formData.phoneNumber.length < 10) {
-        showToast("Please enter a valid phone number", "error");
-        return;
-      }
-
       // Store data in localStorage
       localStorage.setItem("bankBasicInfo", JSON.stringify(formData));
-      
+
       // Navigate to bank details page
-      navigate("/register/bank/details");
+      navigate("/register/details");
+      showToast("Please complete your bank details", "info");
     } catch (error: any) {
-      showToast(
-        error.message || "An error occurred. Please try again.",
-        "error"
-      );
+      showToast(error.message || "An error occurred", "error");
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +62,7 @@ const BankRegister: React.FC = () => {
               <div className="space-y-8">
                 <p className="text-[#4400B8] text-sm">POS Taxation</p>
                 <Link
-                  to="/register"
+                  to="/"
                   className="text-[#4400B8] text-sm flex items-center gap-2"
                 >
                   <svg
@@ -92,10 +84,11 @@ const BankRegister: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-1">
                   <h1 className="text-[28px] font-bold text-[#4400B8]">
-                    Tell Us About You
+                    Register Your Bank
                   </h1>
                   <p className="text-gray-600 text-sm">
-                    Provide your details for identification of your bank
+                    Create an account to manage your bank's tax compliance and
+                    financial operations.
                   </p>
                 </div>
 
@@ -202,8 +195,7 @@ const BankRegister: React.FC = () => {
               Register Your Bank for POS Tax Automation
             </h2>
             <p className="text-white/90 text-xl leading-relaxed">
-              Ensure seamless tax deductions for your POS agents. Sign up today
-              to simplify compliance and financial management.
+              Streamline your tax compliance process with our automated system.
             </p>
           </div>
         </div>

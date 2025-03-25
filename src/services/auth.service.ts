@@ -63,10 +63,15 @@ export interface BankRegistrationData {
   headOfficeAddress: string;
   numAgents: number;
   userType: string;
+  supportingDocument?: File;
 }
 
-interface BankRegistrationResponse {
-  userId: string;
+export interface BankRegistrationResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    userId: string;
+  };
 }
 
 interface LoginData {
@@ -80,6 +85,21 @@ interface LoginResponse {
     email: string;
     userType: string;
     fullName: string;
+  };
+}
+
+interface BankBasicInfo {
+  fullName: string;
+  email: string;
+  phoneNumber: string;
+  userType: string;
+}
+
+interface BankBasicResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    userId: string;
   };
 }
 
@@ -145,21 +165,19 @@ class AuthService {
   }
 
   async registerBank(
-    data: BankRegistrationData
-  ): Promise<ApiResponse<BankRegistrationResponse>> {
+    data: FormData | BankRegistrationData
+  ): Promise<BankRegistrationResponse> {
     try {
-      const response = await apiService.post<
-        ApiResponse<BankRegistrationResponse>
-      >(API_ENDPOINTS.AUTH.REGISTER, data);
-      return (
-        response.data || {
-          success: false,
-          message: "No response received from server",
-          status_code: 500,
-        }
+      const response = await apiService.post<BankRegistrationResponse>(
+        API_ENDPOINTS.AUTH.REGISTER,
+        data
       );
+      if (!response.data) {
+        throw new Error("No response received from server");
+      }
+      return response.data;
     } catch (error: any) {
-      throw this.handleError(error);
+      throw new Error(error.response?.data?.message || "Registration failed");
     }
   }
 
@@ -178,6 +196,21 @@ class AuthService {
           status_code: 500,
         }
       );
+    } catch (error: any) {
+      throw this.handleError(error);
+    }
+  }
+
+  async registerBankBasicInfo(data: BankBasicInfo): Promise<BankBasicResponse> {
+    try {
+      const response = await apiService.post<BankBasicResponse>(
+        API_ENDPOINTS.AUTH.REGISTER,
+        data
+      );
+      if (!response.data) {
+        throw new Error("No response received from server");
+      }
+      return response.data;
     } catch (error: any) {
       throw this.handleError(error);
     }
