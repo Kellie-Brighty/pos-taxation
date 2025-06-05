@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../common/Toast";
-import { authService } from "../../services/auth.service";
+import { useAuth } from "../../context/AuthContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "../../config/firebase";
 
 interface BankDetailsInfo {
   bankName: string;
@@ -20,6 +23,8 @@ interface BankBasicInfo {
 const BankDetails: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { currentUser, userData } = useAuth();
+
   const [formData, setFormData] = useState<BankDetailsInfo>({
     bankName: "",
     registrationNumber: "",
@@ -32,14 +37,27 @@ const BankDetails: React.FC = () => {
   // File handling states
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string>("");
+  const [supportingDocument, setSupportingDocument] = useState<File | null>(
+    null
+  );
 
   useEffect(() => {
-    const basicInfo = localStorage.getItem("bankBasicInfo");
-    if (!basicInfo) {
-      showToast("Please complete your basic information first", "error");
-      navigate("/register");
+    // Check if user is authenticated already
+    if (currentUser && userData && userData.role !== "bank") {
+      showToast("You are not authorized to access this page", "error");
+      navigate("/");
+      return;
     }
-  }, [navigate, showToast]);
+
+    // If this is part of registration flow, check for basic info
+    if (!currentUser) {
+      const basicInfo = localStorage.getItem("bankBasicInfo");
+      if (!basicInfo) {
+        showToast("Please complete your basic information first", "error");
+        navigate("/register");
+      }
+    }
+  }, [navigate, showToast, currentUser, userData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -73,11 +91,11 @@ const BankDetails: React.FC = () => {
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       if (validateFile(file)) {
+        setSupportingDocument(file);
         setSelectedFile(file);
-        setFormData((prev) => ({ ...prev, supportingDocument: file }));
       }
     }
   };
@@ -100,57 +118,87 @@ const BankDetails: React.FC = () => {
     if (file) {
       if (validateFile(file)) {
         setSelectedFile(file);
-        setFormData((prev) => ({ ...prev, supportingDocument: file }));
+        setSupportingDocument(file);
       }
     }
   }, []);
+
+  const uploadFileToFirebase = async (file: File): Promise<string> => {
+    try {
+      // Create a unique file name
+      const timestamp = new Date().getTime();
+      const fileName = `${currentUser?.uid || "temp"}_${timestamp}_${
+        file.name
+      }`;
+
+      // Create a reference to the file location in Firebase Storage
+      const storageRef = ref(storage, `bank_documents/${fileName}`);
+
+      // Upload the file
+      const snapshot = await uploadBytes(storageRef, file);
+
+      // Get the download URL
+      const downloadURL = await getDownloadURL(snapshot.ref);
+
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      throw new Error("Failed to upload file");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const basicInfo = JSON.parse(
-        localStorage.getItem("bankBasicInfo") || "{}"
-      ) as BankBasicInfo;
+      let documentURL = "";
 
-      // Create FormData for multipart/form-data submission
-      const formDataToSubmit = new FormData();
-
-      // Append basic info fields
-      formDataToSubmit.append("fullName", basicInfo.fullName);
-      formDataToSubmit.append("email", basicInfo.email);
-      formDataToSubmit.append("phoneNumber", basicInfo.phoneNumber);
-
-      // Append bank details fields
-      formDataToSubmit.append("bankName", formData.bankName);
-      formDataToSubmit.append(
-        "registrationNumber",
-        formData.registrationNumber
-      );
-      formDataToSubmit.append("headOfficeAddress", formData.headOfficeAddress);
-      formDataToSubmit.append("numAgents", formData.numAgents);
-      formDataToSubmit.append("userType", "bank");
-
-      // Append file if selected
-      if (selectedFile) {
-        formDataToSubmit.append("supportingDocument", selectedFile);
+      // Upload document if selected
+      if (supportingDocument) {
+        documentURL = await uploadFileToFirebase(supportingDocument);
       }
 
-      const response = await authService.registerBank(formDataToSubmit);
+      if (currentUser) {
+        // User is already registered, update Firestore document
+        const userDocRef = doc(db, "users", currentUser.uid);
 
-      if (response.success) {
-        localStorage.setItem("registrationEmail", basicInfo.email);
-        localStorage.setItem("pendingUserId", response.data?.userId || "");
-        localStorage.removeItem("bankBasicInfo"); // Clean up basic info
+        await updateDoc(userDocRef, {
+          businessName: formData.bankName,
+          registrationNumber: formData.registrationNumber,
+          businessAddress: formData.headOfficeAddress,
+          numAgents: formData.numAgents,
+          ...(documentURL && { supportingDocumentURL: documentURL }),
+          registrationCompleted: true,
+        });
 
-        showToast(response.message, "success");
-        navigate("/register/verification");
+        showToast("Bank details updated successfully", "success");
+        navigate("/bank/dashboard");
       } else {
-        showToast(response.message, "error");
+        // Registration flow - store data in localStorage for next step
+        const basicInfo = JSON.parse(
+          localStorage.getItem("bankBasicInfo") || "{}"
+        ) as BankBasicInfo;
+
+        // Store combined data for verification step
+        localStorage.setItem(
+          "bankFullDetails",
+          JSON.stringify({
+            ...basicInfo,
+            businessName: formData.bankName,
+            registrationNumber: formData.registrationNumber,
+            businessAddress: formData.headOfficeAddress,
+            numAgents: formData.numAgents,
+            supportingDocumentURL: documentURL,
+          })
+        );
+
+        showToast("Bank details saved. Proceed to verification.", "success");
+        navigate("/register/verification");
       }
     } catch (error: any) {
-      showToast(error.message || "Registration failed", "error");
+      console.error("Error saving bank details:", error);
+      showToast(error.message || "Failed to save bank details", "error");
     } finally {
       setIsLoading(false);
     }
@@ -260,78 +308,100 @@ const BankDetails: React.FC = () => {
                       id="numAgents"
                       value={formData.numAgents}
                       onChange={handleChange}
-                      placeholder="Enter number of agents"
+                      placeholder="Enter number of POS agents"
                       required
-                      min="0"
+                      min="1"
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
-                      Agents Data
-                      <span className="text-gray-500 text-xs ml-1">
-                        (PDF, Excel, or CSV, max 5MB)
-                      </span>
+                      Supporting Document
                     </label>
                     <div
+                      className={`w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                        isDragging
+                          ? "border-[#4400B8] bg-[#4400B8]/5"
+                          : "border-gray-300 hover:border-[#4400B8]/50 hover:bg-[#4400B8]/5"
+                      }`}
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
-                      className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                        isDragging
-                          ? "border-[#4400B8] bg-[#4400B8]/5"
-                          : "border-gray-300 hover:border-[#4400B8]"
-                      }`}
+                      onClick={() =>
+                        document.getElementById("file-upload")?.click()
+                      }
                     >
-                      <input
-                        type="file"
-                        id="supportingDocument"
-                        onChange={handleFileChange}
-                        accept=".pdf,.csv,.xls,.xlsx"
-                        className="hidden"
-                      />
-                      <label
-                        htmlFor="supportingDocument"
-                        className="cursor-pointer"
-                      >
-                        <div className="space-y-2">
-                          <div className="flex justify-center">
-                            <svg
-                              className="w-12 h-12 text-gray-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                              />
-                            </svg>
-                          </div>
-                          <div className="text-gray-600">
-                            {selectedFile ? (
-                              <span className="text-[#4400B8]">
-                                {selectedFile.name}
-                              </span>
-                            ) : (
-                              <>
-                                <span className="text-[#4400B8] font-medium">
-                                  Click to upload
-                                </span>{" "}
-                                or drag and drop your list of active POS agents
-                                data
-                              </>
-                            )}
-                          </div>
-                          {fileError && (
-                            <p className="text-red-500 text-sm">{fileError}</p>
-                          )}
+                      {selectedFile ? (
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <svg
+                            className="w-10 h-10 text-[#4400B8]"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M5 13l4 4L19 7"
+                            ></path>
+                          </svg>
+                          <span className="text-sm text-gray-500">
+                            {selectedFile.name}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </span>
+                          <button
+                            type="button"
+                            className="text-xs text-[#4400B8] hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedFile(null);
+                              setSupportingDocument(null);
+                            }}
+                          >
+                            Remove
+                          </button>
                         </div>
-                      </label>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-12 h-12 text-gray-400 mb-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                            ></path>
+                          </svg>
+                          <p className="text-sm text-gray-500">
+                            Drag & drop your file here, or{" "}
+                            <span className="text-[#4400B8]">browse</span>
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            Supported formats: PDF, Excel, CSV (Max 5MB)
+                          </p>
+                        </>
+                      )}
+                      <input
+                        id="file-upload"
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.xls,.xlsx,.csv"
+                        onChange={handleFileChange}
+                      />
                     </div>
+                    {fileError && (
+                      <p className="text-red-500 text-xs mt-1">{fileError}</p>
+                    )}
                   </div>
 
                   <button
@@ -361,10 +431,10 @@ const BankDetails: React.FC = () => {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           ></path>
                         </svg>
-                        Processing...
+                        Saving...
                       </>
                     ) : (
-                      "Complete Registration"
+                      "Save & Continue"
                     )}
                   </button>
                 </div>
@@ -381,8 +451,8 @@ const BankDetails: React.FC = () => {
               Complete Your Bank Registration
             </h2>
             <p className="text-white/90 text-xl leading-relaxed">
-              Provide your bank details to finalize your registration and start
-              managing tax compliance.
+              Provide your bank details and supporting documentation to continue
+              the registration process.
             </p>
           </div>
         </div>

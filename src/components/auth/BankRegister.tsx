@@ -1,20 +1,27 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "../common/Toast";
+import { useAuth } from "../../context/AuthContext";
 
-interface BankBasicInfo {
+interface BankRegistrationData {
   fullName: string;
   email: string;
   phoneNumber: string;
+  password: string;
+  confirmPassword: string;
 }
 
 const BankRegister: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const [formData, setFormData] = useState<BankBasicInfo>({
+  const { signUp } = useAuth();
+  
+  const [formData, setFormData] = useState<BankRegistrationData>({
     fullName: "",
     email: "",
     phoneNumber: "",
+    password: "",
+    confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,17 +42,47 @@ const BankRegister: React.FC = () => {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
         showToast("Please enter a valid email address", "error");
+        setIsLoading(false);
         return;
       }
 
-      // Store data in localStorage
-      localStorage.setItem("bankBasicInfo", JSON.stringify(formData));
+      // Validate password
+      if (formData.password.length < 6) {
+        showToast("Password must be at least 6 characters", "error");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate password match
+      if (formData.password !== formData.confirmPassword) {
+        showToast("Passwords do not match", "error");
+        setIsLoading(false);
+        return;
+      }
+
+      // Register user with Firebase
+      await signUp(
+        formData.email, 
+        formData.password, 
+        "bank", 
+        {
+          displayName: formData.fullName,
+          phoneNumber: formData.phoneNumber,
+        }
+      );
+
+      // Store basic info for the next registration step
+      localStorage.setItem("bankBasicInfo", JSON.stringify({
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+      }));
 
       // Navigate to bank details page
       navigate("/register/details");
-      showToast("Please complete your bank details", "info");
+      showToast("Account created successfully. Please complete your bank details", "success");
     } catch (error: any) {
-      showToast(error.message || "An error occurred", "error");
+      showToast(error.message || "Registration failed", "error");
     } finally {
       setIsLoading(false);
     }
@@ -147,6 +184,42 @@ const BankRegister: React.FC = () => {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      id="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="Create a strong password"
+                      required
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirm your password"
+                      required
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-base"
+                    />
+                  </div>
+
                   <button
                     type="submit"
                     disabled={isLoading}
@@ -177,9 +250,18 @@ const BankRegister: React.FC = () => {
                         Processing...
                       </>
                     ) : (
-                      "Continue Registration"
+                      "Create Account & Continue"
                     )}
                   </button>
+
+                  <div className="text-center pt-4">
+                    <p className="text-sm text-gray-600">
+                      Already have an account?{" "}
+                      <Link to="/login" className="text-[#4400B8] hover:underline">
+                        Log In
+                      </Link>
+                    </p>
+                  </div>
                 </div>
               </form>
             </div>

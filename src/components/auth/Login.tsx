@@ -1,29 +1,49 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useToast } from "../common/Toast";
-import { authService } from "../../services/auth.service";
+import { useAuth } from "../../context/AuthContext";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { signIn, userData, currentUser } = useAuth();
+
+  useEffect(() => {
+    // Redirect if user is already logged in
+    if (currentUser && userData) {
+      redirectBasedOnRole(userData.role);
+    }
+  }, [currentUser, userData]);
+
+  const redirectBasedOnRole = (role: string) => {
+    switch (role) {
+      case "admin":
+        navigate("/admin/dashboard");
+        break;
+      case "bank":
+        navigate("/bank/dashboard");
+        break;
+      case "pos_agent":
+        navigate("/pos/dashboard");
+        break;
+      default:
+        navigate("/");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await authService.requestLoginOTP({ email });
-      if (response.success) {
-        localStorage.setItem("loginEmail", email);
-        navigate("/verify-otp");
-        showToast(response.message, "success");
-      } else {
-        showToast(response.message, "error");
-      }
+      await signIn(email, password);
+      showToast("Login successful", "success");
+      // Redirection will happen via the useEffect when userData is loaded
     } catch (error: any) {
-      showToast(error.message || "Failed to send login code", "error");
+      showToast(error.message || "Failed to log in", "error");
     } finally {
       setIsLoading(false);
     }
@@ -35,12 +55,9 @@ const Login: React.FC = () => {
         <div className="p-8 lg:p-12 xl:p-16">
           <div className="max-w-[440px] mx-auto">
             <div className="space-y-16">
-              <p
-                className="text-[#4400B8] text-sm"
-                onClick={() => navigate("/")}
-              >
+              <Link to="/" className="text-[#4400B8] text-sm">
                 POS Taxation
-              </p>
+              </Link>
 
               <div className="space-y-6">
                 <div className="space-y-1">
@@ -48,7 +65,7 @@ const Login: React.FC = () => {
                     Login
                   </h1>
                   <p className="text-gray-600 text-sm">
-                    Enter your email to receive a login code.
+                    Enter your credentials to access your account.
                   </p>
                 </div>
 
@@ -67,9 +84,32 @@ const Login: React.FC = () => {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      required
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors"
+                    />
+                  </div>
+
+                  <div className="text-right">
+                    <Link
+                      to="/forgot-password"
+                      className="text-sm text-[#4400B8] hover:underline"
+                    >
+                      Forgot Password?
+                    </Link>
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={isLoading || !email}
+                    disabled={isLoading || !email || !password}
                     className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isLoading ? (
@@ -94,13 +134,25 @@ const Login: React.FC = () => {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           ></path>
                         </svg>
-                        Sending Code...
+                        Logging in...
                       </>
                     ) : (
-                      "Send Login Code"
+                      "Log In"
                     )}
                   </button>
                 </form>
+
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">
+                    Don't have an account?{" "}
+                    <Link
+                      to="/register"
+                      className="text-[#4400B8] hover:underline"
+                    >
+                      Register
+                    </Link>
+                  </p>
+                </div>
               </div>
             </div>
           </div>

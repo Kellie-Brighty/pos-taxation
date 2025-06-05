@@ -14,6 +14,8 @@ export { default as InvoiceDetails } from "./InvoiceDetails";
 export { default as PayInvoice } from "./PayInvoice";
 export { default as AdminDashboard } from "./AdminDashboard";
 export { default as AdminDashboardLayout } from "./AdminDashboardLayout";
+export { default as GovernmentDashboard } from "./GovernmentDashboard";
+export { default as GovernmentDashboardLayout } from "./GovernmentDashboardLayout";
 export { default as InvoiceManagement } from "./InvoiceManagement";
 export { default as PaymentsManagement } from "./PaymentsManagement";
 export { default as ReportsManagement } from "./ReportsManagement";

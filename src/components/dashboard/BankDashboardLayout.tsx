@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import UserAvatar from "../common/UserAvatar";
+import { useAuth } from "../../context/AuthContext";
+import LogoutConfirmation from "../common/LogoutConfirmation";
 
 const NavItem = ({
   item,
@@ -34,8 +37,27 @@ const NavItem = ({
 
 const BankDashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { userData, signOut } = useAuth();
+
+  const handleLogoutClick = () => {
+    setIsSidebarOpen(false);
+    setShowLogoutConfirmation(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    try {
+      await signOut();
+      // Navigate to the login page after successful logout
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      setShowLogoutConfirmation(false);
+    }
+  };
 
   const navigation = [
     {
@@ -235,13 +257,7 @@ const BankDashboardLayout: React.FC = () => {
 
             {/* Logout Button */}
             <button
-              onClick={() => {
-                setIsSidebarOpen(false);
-                localStorage.clear();
-                sessionStorage.clear();
-                // Navigate to the registration type selection page
-                navigate("/register");
-              }}
+              onClick={handleLogoutClick}
               className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-white hover:bg-white/10 w-full"
             >
               <svg
@@ -287,29 +303,30 @@ const BankDashboardLayout: React.FC = () => {
               </svg>
             </button>
 
-            <div className="flex items-center gap-4">
-              {/* Search */}
-              <div className="hidden md:flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg">
-                <svg
-                  className="w-5 h-5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Search for anything"
-                  className="bg-transparent border-0 focus:ring-0 text-sm text-gray-600 placeholder-gray-400 w-64"
+            {/* Search - Left aligned */}
+            <div className="hidden md:flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg flex-1 max-w-md">
+              <svg
+                className="w-5 h-5 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                 />
-              </div>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search for anything"
+                className="bg-transparent border-0 focus:ring-0 text-sm text-gray-600 placeholder-gray-400 w-full"
+              />
+            </div>
 
+            {/* Right aligned items */}
+            <div className="flex items-center gap-4 ml-auto">
               {/* Notifications */}
               <button className="text-gray-500 hover:text-gray-600">
                 <svg
@@ -327,10 +344,18 @@ const BankDashboardLayout: React.FC = () => {
                 </svg>
               </button>
 
-              {/* Profile */}
-              <button className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gray-200" />
-              </button>
+              {/* Profile with Bank Name */}
+              <div className="flex items-center gap-3">
+                {userData?.businessName && (
+                  <span className="text-sm font-medium text-gray-700 hidden md:block">
+                    {userData.businessName}
+                  </span>
+                )}
+                <UserAvatar
+                  displayName={userData?.businessName || userData?.displayName}
+                  size="sm"
+                />
+              </div>
             </div>
           </div>
         </header>
@@ -340,6 +365,13 @@ const BankDashboardLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmation
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </div>
   );
 };

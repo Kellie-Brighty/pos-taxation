@@ -7,5 +7,7 @@ export { default as BankRegister } from "./BankRegister";
 export { default as BankDetails } from "./BankDetails";
 export { default as BankVerification } from "./BankVerification";
 export { default as AdminLogin } from "./AdminLogin";
+export { default as GovernmentLogin } from "./GovernmentLogin";
 export { default as Login } from "./Login";
 export { default as OTPVerification } from "./OTPVerification";
+export { default as ProtectedRoute } from "./ProtectedRoute";

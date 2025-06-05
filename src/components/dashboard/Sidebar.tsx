@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import LogoutConfirmation from "../common/LogoutConfirmation";
 
 interface NavItemProps {
   to: string;
@@ -56,13 +58,23 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
 
-  const handleLogout = () => {
-    // Clear auth tokens and user data
-    localStorage.clear();
-    sessionStorage.clear();
-    // Navigate to the login page
-    navigate("/login");
+  const handleLogoutClick = () => {
+    setShowLogoutConfirmation(true);
+  };
+
+  const handleConfirmLogout = async () => {
+    try {
+      await signOut();
+      // Navigate to the login page after successful logout
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    } finally {
+      setShowLogoutConfirmation(false);
+    }
   };
 
   return (
@@ -192,7 +204,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
         <div className="p-4 mt-auto border-t border-white/10">
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="flex items-center gap-2 text-white/60 hover:text-white transition-colors px-4 py-2 w-full"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -202,6 +214,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           </button>
         </div>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      <LogoutConfirmation
+        isOpen={showLogoutConfirmation}
+        onClose={() => setShowLogoutConfirmation(false)}
+        onConfirm={handleConfirmLogout}
+      />
     </>
   );
 };

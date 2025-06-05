@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import LogoutConfirmation from "../common/LogoutConfirmation";
 
-const AdminDashboardLayout: React.FC = () => {
+const GovernmentDashboardLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const location = useLocation();
@@ -17,8 +17,8 @@ const AdminDashboardLayout: React.FC = () => {
   const handleConfirmLogout = async () => {
     try {
       await signOut();
-      // Navigate to the admin login page after successful logout
-      navigate("/admin/login");
+      // Navigate to the login page after successful logout
+      navigate("/government/login");
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
@@ -58,7 +58,9 @@ const AdminDashboardLayout: React.FC = () => {
       >
         {/* Brand */}
         <div className="p-4">
-          <h1 className="text-white text-xl font-semibold">POS Taxation</h1>
+          <h1 className="text-white text-xl font-semibold">
+            Government Tax Portal
+          </h1>
         </div>
 
         {/* Navigation */}
@@ -69,7 +71,7 @@ const AdminDashboardLayout: React.FC = () => {
             </p>
             <div className="mt-2 space-y-1">
               <NavItem
-                to="/admin/dashboard"
+                to="/government/dashboard"
                 icon={
                   <svg
                     className="w-5 h-5"
@@ -82,94 +84,31 @@ const AdminDashboardLayout: React.FC = () => {
                 label="Dashboard"
               />
               <NavItem
-                to="/admin/dashboard/bank-submissions"
+                to="/government/dashboard/settlements"
                 icon={
                   <svg
                     className="w-5 h-5"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
-                    <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
+                    />
                   </svg>
                 }
-                label="Bank Submissions"
+                label="Admin Settlements"
               />
-              {/* <NavItem
-                to="/admin/dashboard/invoice-management"
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                    <path
-                      fillRule="evenodd"
-                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-                    />
-                  </svg>
-                }
-                label="Invoice Management"
-              /> */}
-              {/* <NavItem
-                to="/admin/dashboard/payments"
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                    <path
-                      fillRule="evenodd"
-                      d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
-                    />
-                  </svg>
-                }
-                label="Payments"
-              /> */}
-              {/* <NavItem
-                to="/admin/dashboard/reports"
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z"
-                    />
-                  </svg>
-                }
-                label="Reports"
-              /> */}
             </div>
           </div>
 
           <div className="mb-4">
             <p className="px-4 text-xs font-medium text-white/60 uppercase">
-              Account
+              Help
             </p>
             <div className="mt-2 space-y-1">
-              {/* <NavItem
-                to="/admin/dashboard/settings"
-                icon={
-                  <svg
-                    className="w-5 h-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                    />
-                  </svg>
-                }
-                label="Settings"
-              /> */}
               <NavItem
-                to="/admin/support"
+                to="/government/support"
                 icon={
                   <svg
                     className="w-5 h-5"
@@ -235,7 +174,7 @@ const AdminDashboardLayout: React.FC = () => {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Search for anything..."
+                  placeholder="Search tax payments..."
                   className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8]"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -253,36 +192,29 @@ const AdminDashboardLayout: React.FC = () => {
               </div>
             </div>
 
-            {/* Profile */}
-            <div className="flex items-center gap-4">
-              <button className="p-2 text-gray-600 hover:text-gray-900">
+            {/* User Info */}
+            <div className="flex items-center">
+              <span className="text-sm text-gray-700 mr-4 hidden md:inline-block">
+                Government Portal
+              </span>
+              <div className="h-8 w-8 rounded-full bg-[#4400B8] flex items-center justify-center text-white">
                 <svg
-                  className="w-6 h-6"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                </svg>
-              </button>
-              <button className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gray-200" />
-                <svg
-                  className="w-5 h-5 text-gray-600"
+                  className="w-5 h-5"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
                   <path
                     fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z"
                   />
                 </svg>
-              </button>
+              </div>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           <Outlet />
         </main>
       </div>
@@ -290,11 +222,11 @@ const AdminDashboardLayout: React.FC = () => {
       {/* Logout Confirmation Modal */}
       <LogoutConfirmation
         isOpen={showLogoutConfirmation}
-        onClose={() => setShowLogoutConfirmation(false)}
         onConfirm={handleConfirmLogout}
+        onClose={() => setShowLogoutConfirmation(false)}
       />
     </div>
   );
 };
 
-export default AdminDashboardLayout;
+export default GovernmentDashboardLayout;

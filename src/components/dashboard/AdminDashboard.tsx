@@ -1,67 +1,17 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Link } from "react-router-dom";
+import { useAdminDashboard } from "../../context/AdminDashboardContext";
+import ExportButton from "../common/ExportButton";
 
-interface BankSubmission {
-  id: string;
-  dateSubmitted: string;
-  bankName: string;
-  posAgents: number;
-  totalIncome: number;
-  status: "Approved" | "Pending";
-}
+
 
 const AdminDashboard: React.FC = () => {
-  // Sample data - replace with actual data from your backend
-  const stats = {
-    totalBanks: 200,
-    totalPosAgents: "50,000+",
-    totalTaxRevenue: "₦500,000,000",
-    totalDeductions: "₦70,000,000",
-    pendingAmount: "₦30,000,000",
-  };
+  const { stats, recentSubmissions, isLoading } = useAdminDashboard();
+  const tableRef = useRef<HTMLTableElement>(null);
 
-  const recentSubmissions: BankSubmission[] = [
-    {
-      id: "1",
-      dateSubmitted: "Jan 25",
-      bankName: "Zenith Bank",
-      posAgents: 6064,
-      totalIncome: 60000000,
-      status: "Approved",
-    },
-    {
-      id: "2",
-      dateSubmitted: "Jan 20",
-      bankName: "GTB",
-      posAgents: 3507,
-      totalIncome: 40500000,
-      status: "Pending",
-    },
-    {
-      id: "3",
-      dateSubmitted: "Jan 2",
-      bankName: "Kuda",
-      posAgents: 3234,
-      totalIncome: 65000000,
-      status: "Approved",
-    },
-    {
-      id: "4",
-      dateSubmitted: "Jan 13",
-      bankName: "UBA",
-      posAgents: 4125,
-      totalIncome: 82500000,
-      status: "Approved",
-    },
-    {
-      id: "5",
-      dateSubmitted: "Jan 21",
-      bankName: "First Bank",
-      posAgents: 2158,
-      totalIncome: 42500000,
-      status: "Pending",
-    },
-  ];
+  const formatCurrency = (amount: number) => {
+    return `₦${amount.toLocaleString()}`;
+  };
 
   return (
     <div className="space-y-6">
@@ -86,9 +36,13 @@ const AdminDashboard: React.FC = () => {
               <p className="text-sm text-gray-600 truncate">
                 Total Banks Reporting
               </p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {stats.totalBanks}
-              </p>
+              {isLoading ? (
+                <div className="animate-pulse h-6 mt-1 bg-gray-200 rounded w-16"></div>
+              ) : (
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {stats.totalBanks}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -107,9 +61,13 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="min-w-0">
               <p className="text-sm text-gray-600 truncate">Total POS Agents</p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {stats.totalPosAgents}
-              </p>
+              {isLoading ? (
+                <div className="animate-pulse h-6 mt-1 bg-gray-200 rounded w-20"></div>
+              ) : (
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {stats.totalPosAgents}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -134,9 +92,13 @@ const AdminDashboard: React.FC = () => {
               <p className="text-sm text-gray-600 truncate">
                 Total Tax Revenue
               </p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {stats.totalTaxRevenue}
-              </p>
+              {isLoading ? (
+                <div className="animate-pulse h-6 mt-1 bg-gray-200 rounded w-24"></div>
+              ) : (
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {stats.totalTaxRevenue}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -158,9 +120,13 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="min-w-0">
               <p className="text-sm text-gray-600 truncate">Total Deductions</p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {stats.totalDeductions}
-              </p>
+              {isLoading ? (
+                <div className="animate-pulse h-6 mt-1 bg-gray-200 rounded w-24"></div>
+              ) : (
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {stats.totalDeductions}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -182,9 +148,13 @@ const AdminDashboard: React.FC = () => {
             </div>
             <div className="min-w-0">
               <p className="text-sm text-gray-600 truncate">Pending Amount</p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {stats.pendingAmount}
-              </p>
+              {isLoading ? (
+                <div className="animate-pulse h-6 mt-1 bg-gray-200 rounded w-24"></div>
+              ) : (
+                <p className="text-lg font-semibold text-gray-900 mt-1">
+                  {stats.pendingAmount}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -202,24 +172,24 @@ const AdminDashboard: React.FC = () => {
                 Review agent counts and income reports submitted by banks
               </p>
             </div>
-            {/* <Link
-              to="/admin/bank-submissions"
+            <Link
+              to="/admin/dashboard/bank-submissions"
               className="text-sm text-[#4400B8] hover:text-[#4400B8]/80 flex items-center gap-1"
             >
-              Manage all POS Agents
+              View All Submissions
               <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
                   d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
                 />
               </svg>
-            </Link> */}
+            </Link>
           </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table ref={tableRef} className="w-full">
             <thead>
               <tr className="bg-gray-50">
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -243,66 +213,105 @@ const AdminDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {recentSubmissions.map((submission) => (
-                <tr key={submission.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {submission.dateSubmitted}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {submission.bankName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {submission.posAgents.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ₦{submission.totalIncome.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        submission.status === "Approved"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {submission.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <Link
-                      to={`/admin/dashboard/bank-submissions/${submission.id}`}
-                      className="text-[#4400B8] hover:text-[#4400B8]/80 flex items-center gap-1"
-                    >
-                      View details
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                        />
-                      </svg>
-                    </Link>
+              {isLoading ? (
+                // Loading state
+                Array(5)
+                  .fill(0)
+                  .map((_, index) => (
+                    <tr key={`loading-${index}`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="animate-pulse h-4 bg-gray-200 rounded w-20"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="animate-pulse h-4 bg-gray-200 rounded w-24"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="animate-pulse h-4 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="animate-pulse h-4 bg-gray-200 rounded w-24"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="animate-pulse h-4 bg-gray-200 rounded w-16"></div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="animate-pulse h-4 bg-gray-200 rounded w-20"></div>
+                      </td>
+                    </tr>
+                  ))
+              ) : recentSubmissions.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-10 text-center text-gray-500"
+                  >
+                    No submissions found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                recentSubmissions.map((submission) => (
+                  <tr key={submission.id}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {submission.dateSubmitted}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {submission.bankName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {submission.posAgents.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {formatCurrency(submission.totalIncome)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          submission.status === "Approved"
+                            ? "bg-green-100 text-green-800"
+                            : submission.status === "Rejected"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {submission.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <Link
+                        to={`/admin/dashboard/bank-submissions/${submission.id}`}
+                        className="text-[#4400B8] hover:text-[#4400B8]/80 flex items-center gap-1"
+                      >
+                        View details
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                          />
+                        </svg>
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Export Button */}
         <div className="p-4 border-t border-gray-100">
-          <button className="text-sm text-[#4400B8] hover:text-[#4400B8]/80 flex items-center gap-2">
-            <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fillRule="evenodd"
-                d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-              />
-            </svg>
-            Export as PDF
-          </button>
+          <ExportButton
+            tableRef={tableRef}
+            options={{
+              title: "Bank Submissions Report",
+              fileName: "bank-submissions-report.pdf",
+              includeDate: true,
+            }}
+            disabled={isLoading || recentSubmissions.length === 0}
+          />
         </div>
       </div>
     </div>
