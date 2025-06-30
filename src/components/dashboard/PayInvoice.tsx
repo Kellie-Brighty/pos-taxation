@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useTerraswitch } from "../../context/TerraswitchContext";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import {
   ref as storageRef,
@@ -8,11 +9,33 @@ import {
   getDownloadURL,
 } from "firebase/storage";
 import { db, storage } from "../../config/firebase";
+import { TerraApiError } from "../../config/terraswitch.config";
+// import { terraswitchService } from "../../services/terraswitch.service";
 
+/**
+ * PayInvoice Component with Terra Switching Integration
+ *
+ * This component now supports:
+ * - Terra Switching payment link generation
+ * - Real-time payment status tracking
+ * - Automatic settlement to government account
+ * - Traditional manual payment upload as fallback
+ *
+ * @version 2.0.0 - Terra Switching Integration
+ */
 const PayInvoice: React.FC = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { currentUser } = useAuth();
+  const { currentUser, userData } = useAuth();
+  const {
+    initializePayment,
+    getPaymentStatus,
+    isLoading: terraLoading,
+    error: terraError,
+    clearError,
+  } = useTerraswitch();
+
+  // Component state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -20,15 +43,22 @@ const PayInvoice: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [invoiceData, setInvoiceData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentMethod, setPaymentMethod] = useState<"terraswitch" | "manual">(
+    "terraswitch"
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
 
-  // Bank account details for manual payment
+  // Bank account details for manual payment (fallback)
   const bankDetails = {
     accountName: "Ondo State Revenue Account",
     bankName: "ABC National Bank",
     accountNumber: "1234567890",
   };
 
+  /**
+   * Fetch invoice data on component mount
+   */
   useEffect(() => {
     const fetchInvoiceData = async () => {
       if (!id || !currentUser) return;
@@ -76,14 +106,29 @@ const PayInvoice: React.FC = () => {
     fetchInvoiceData();
   }, [id, currentUser]);
 
+  /**
+   * Clear errors when switching payment methods
+   */
+  useEffect(() => {
+    setError(null);
+    clearError();
+  }, [paymentMethod, clearError]);
+
+  /**
+   * Handle file selection for manual payment
+   */
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       setSelectedFile(event.target.files[0]);
     }
   };
 
+  /**
+   * Handle Terra Switching online payment
+   * Creates a payment link and redirects user to Terra checkout
+   */
   const handlePayOnline = async () => {
-    if (!id || !currentUser || !invoiceData) {
+    if (!id || !currentUser || !invoiceData || !userData) {
       setError("Invoice information is missing");
       return;
     }
@@ -92,42 +137,49 @@ const PayInvoice: React.FC = () => {
       setIsSubmitting(true);
       setError(null);
 
-      // In a real application, this would integrate with a payment gateway
-      // For now, we'll simulate a successful payment
-
-      // Update invoice status in Firestore - Note: Still pending admin approval
-      const invoiceRef = doc(db, "invoices", id);
-      await updateDoc(invoiceRef, {
-        status: "pending", // Changed from "paid" to "pending" as it still needs admin approval
-        paymentMethod: "online",
-        paymentReference: `PAY-${Date.now()}`,
-        paidDate: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+      console.log("[PayInvoice] Initializing Terra Switching payment...", {
+        invoiceId: id,
+        amount: invoiceData.taxAmount,
+        bankName: userData.businessName || "Unknown Bank",
+        taxReportId: invoiceData.taxReportId,
       });
 
-      // The tax report status remains pending until admin approval
-      if (invoiceData.taxReportId) {
-        const taxReportRef = doc(db, "taxReports", invoiceData.taxReportId);
-        await updateDoc(taxReportRef, {
-          status: "pending", // Changed from "approved" to "pending"
-          updatedAt: serverTimestamp(),
-        });
+      // Initialize payment with Terra Switching
+      const response = await initializePayment({
+        invoiceId: id,
+        amount: invoiceData.taxAmount,
+        bankName: userData.businessName || "Unknown Bank",
+        taxReportId: invoiceData.taxReportId,
+        description: `Tax payment for invoice ${invoiceData.invoiceNumber}`,
+      });
+
+      console.log("[PayInvoice] Payment initialized successfully:", response);
+      console.log("[PayInvoice] Payment link:", response.data.link);
+
+      // Store the payment link
+      setPaymentLink(response.data.link);
+
+      // Redirect directly to Terra Switching payment page
+      window.location.href = response.data.link;
+    } catch (err) {
+      console.error("Error processing Terra Switching payment:", err);
+
+      let errorMessage = "Payment processing failed. Please try again.";
+
+      if (err instanceof TerraApiError) {
+        errorMessage = err.message;
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
       }
 
-      setSuccess(true);
-      setIsSubmitting(false);
-
-      // Navigate back to invoice details after 2 seconds
-      setTimeout(() => {
-        navigate(`/bank/dashboard/invoices/${id}`);
-      }, 2000);
-    } catch (err) {
-      console.error("Error processing payment:", err);
-      setError("Payment processing failed. Please try again.");
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };
 
+  /**
+   * Handle manual payment receipt upload (fallback method)
+   */
   const handleUploadReceipt = async () => {
     if (!selectedFile || !id || !currentUser || !invoiceData) {
       setError("Please select a file first");
@@ -138,7 +190,7 @@ const PayInvoice: React.FC = () => {
       setIsSubmitting(true);
       setError(null);
 
-      // 1. Upload file to Firebase Storage
+      // Upload file to Firebase Storage
       const fileRef = storageRef(
         storage,
         `payment-receipts/${currentUser.uid}/${
@@ -197,6 +249,12 @@ const PayInvoice: React.FC = () => {
     }
   };
 
+  // Get current payment status from Terra Switching context
+  const paymentStatus = id ? getPaymentStatus(id) : undefined;
+
+  /**
+   * Render loading state
+   */
   if (loading) {
     return (
       <div className="p-6 flex justify-center items-center min-h-[300px]">
@@ -210,34 +268,29 @@ const PayInvoice: React.FC = () => {
     );
   }
 
-  if (error) {
+  /**
+   * Render error state
+   */
+  if (error && !invoiceData) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg
                 className="h-5 w-5 text-red-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
                 <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
                 />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-red-800">{error}</p>
-              <button
-                onClick={() => navigate(`/bank/dashboard/invoices/${id}`)}
-                className="mt-2 text-sm text-red-800 underline"
-              >
-                Return to Invoice
-              </button>
+              <p className="text-sm">{error}</p>
             </div>
           </div>
         </div>
@@ -245,6 +298,9 @@ const PayInvoice: React.FC = () => {
     );
   }
 
+  /**
+   * Render success state
+   */
   if (success) {
     return (
       <div className="p-6">
@@ -267,9 +323,9 @@ const PayInvoice: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm font-medium text-green-800">
-                {selectedFile
-                  ? "Payment proof uploaded successfully! Your payment is pending approval."
-                  : "Payment processed successfully! Your payment is pending approval by an administrator."}
+                {paymentMethod === "terraswitch"
+                  ? "Payment link generated successfully! Complete your payment in the new tab."
+                  : "Payment proof uploaded successfully! Your payment is pending approval."}
               </p>
               <p className="mt-1 text-sm text-green-700">
                 Redirecting to invoice details...
@@ -281,16 +337,19 @@ const PayInvoice: React.FC = () => {
     );
   }
 
+  /**
+   * Main payment interface
+   */
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-gray-900">
           Pay Invoice: {invoiceData?.invoiceNumber}
         </h1>
         <p className="mt-2 text-sm text-gray-600">
-          Pay your invoice online or transfer the tax amount to the provided
-          government account.
+          Choose your preferred payment method. We recommend using our secure
+          online payment system powered by Terra Switching.
         </p>
       </div>
 
@@ -302,6 +361,39 @@ const PayInvoice: React.FC = () => {
             ₦{invoiceData?.taxAmount.toLocaleString()}
           </p>
         </div>
+
+        {/* Payment Status Indicator */}
+        {paymentStatus && (
+          <div className="mb-4">
+            <span className="text-sm font-medium text-gray-500">
+              Payment Status:
+            </span>
+            <div className="mt-1">
+              <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  paymentStatus.status === "success"
+                    ? "bg-green-100 text-green-800"
+                    : paymentStatus.status === "failed"
+                    ? "bg-red-100 text-red-800"
+                    : paymentStatus.status === "payment_link_generated"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-yellow-100 text-yellow-800"
+                }`}
+              >
+                {paymentStatus.status === "success"
+                  ? "Payment Successful"
+                  : paymentStatus.status === "failed"
+                  ? "Payment Failed"
+                  : paymentStatus.status === "payment_link_generated"
+                  ? "Payment Link Generated"
+                  : paymentStatus.status === "initializing"
+                  ? "Initializing Payment"
+                  : "Payment Pending"}
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center text-sm text-gray-600">
           <svg
             className="w-5 h-5 text-amber-500 mr-2"
@@ -323,134 +415,219 @@ const PayInvoice: React.FC = () => {
         </div>
       </div>
 
-      {/* Bank Details */}
-      <div className="grid grid-cols-1 gap-y-6 max-w-2xl mb-8">
-        <h2 className="text-lg font-medium text-gray-900">
-          Bank Transfer Details
+      {/* Payment Method Selection */}
+      <div className="mb-8">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">
+          Choose Payment Method
         </h2>
-        <div>
-          <label className="text-sm font-medium text-gray-500">
-            Account Name
-          </label>
-          <p className="mt-1 text-sm text-gray-900">
-            {bankDetails.accountName}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500">Bank Name</label>
-          <p className="mt-1 text-sm text-gray-900">{bankDetails.bankName}</p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500">
-            Account Number
-          </label>
-          <p className="mt-1 text-sm text-gray-900">
-            {bankDetails.accountNumber}
-          </p>
-        </div>
-        <div>
-          <label className="text-sm font-medium text-gray-500">
-            Reference Code
-          </label>
-          <p className="mt-1 text-sm text-gray-900">
-            {invoiceData?.invoiceNumber}
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Terra Switching Payment */}
+          <div
+            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+              paymentMethod === "terraswitch"
+                ? "border-[#4400B8] bg-[#4400B8]/5"
+                : "border-gray-200 hover:border-gray-300"
+            }`}
+            onClick={() => setPaymentMethod("terraswitch")}
+          >
+            <div className="flex items-center mb-2">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="terraswitch"
+                checked={paymentMethod === "terraswitch"}
+                onChange={(e) =>
+                  setPaymentMethod(e.target.value as "terraswitch")
+                }
+                className="mr-2"
+              />
+              <h3 className="font-medium text-gray-900">
+                Secure Online Payment
+              </h3>
+              <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                Recommended
+              </span>
+            </div>
+            <p className="text-sm text-gray-600">
+              Pay instantly using bank transfer, cards, or USSD. Powered by
+              Terra Switching with automatic settlement.
+            </p>
+            <div className="mt-2 flex items-center text-xs text-green-600">
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              Instant confirmation • Secure • Multiple payment options
+            </div>
+          </div>
+
+          {/* Manual Payment */}
+          <div
+            className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+              paymentMethod === "manual"
+                ? "border-[#4400B8] bg-[#4400B8]/5"
+                : "border-gray-200 hover:border-gray-300"
+            }`}
+            onClick={() => setPaymentMethod("manual")}
+          >
+            <div className="flex items-center mb-2">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="manual"
+                checked={paymentMethod === "manual"}
+                onChange={(e) => setPaymentMethod(e.target.value as "manual")}
+                className="mr-2"
+              />
+              <h3 className="font-medium text-gray-900">
+                Manual Bank Transfer
+              </h3>
+            </div>
+            <p className="text-sm text-gray-600">
+              Transfer to government account and upload payment receipt for
+              verification.
+            </p>
+            <div className="mt-2 flex items-center text-xs text-amber-600">
+              <svg
+                className="w-4 h-4 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+              Requires manual verification • Processing may take longer
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-4">
-          <button
-            onClick={handlePayOnline}
-            disabled={isSubmitting}
-            className={`px-6 py-2 bg-[#4400B8] text-white rounded-lg text-sm font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50 flex items-center ${
-              isSubmitting ? "opacity-70 cursor-not-allowed" : ""
-            }`}
-          >
-            {isSubmitting && !selectedFile && (
+      {/* Error Display */}
+      {(error || terraError) && (
+        <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-r-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">
               <svg
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
+                className="h-5 w-5 text-red-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
                 <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  clipRule="evenodd"
+                />
               </svg>
-            )}
-            Pay Online
-          </button>
-          <label
-            htmlFor="receipt-upload"
-            className={`px-6 py-2 border border-[#4400B8] text-[#4400B8] rounded-lg text-sm font-medium hover:bg-[#4400B8]/5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50 ${
-              isSubmitting ? "opacity-70 pointer-events-none" : ""
-            }`}
-          >
-            Upload Offline Receipt
-            <input
-              id="receipt-upload"
-              type="file"
-              className="hidden"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={handleFileChange}
-              disabled={isSubmitting}
-              ref={fileInputRef}
-            />
-          </label>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm">{error || terraError}</p>
+            </div>
+          </div>
         </div>
+      )}
 
-        {selectedFile && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-gray-600">
-                Selected file: {selectedFile.name}
+      {/* Payment Link Fallback - Show when popup is blocked */}
+      {paymentLink && error && error.includes("Popup blocked") && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="text-sm font-medium text-blue-800">
+                Payment Link Available
+              </h4>
+              <p className="text-sm text-blue-700 mt-1">
+                Click the button below to open the Terra Switching payment page
+                manually.
               </p>
-              <button
-                onClick={() => setSelectedFile(null)}
-                className="text-sm text-red-600 hover:text-red-800"
-                disabled={isSubmitting}
+            </div>
+            <div className="flex space-x-3">
+              <a
+                href={paymentLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                Remove
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+                Open Payment Page
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(paymentLink);
+                  alert("Payment link copied to clipboard!");
+                }}
+                className="inline-flex items-center px-3 py-2 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <svg
+                  className="w-4 h-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+                Copy Link
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            {isSubmitting && uploadProgress > 0 && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm font-medium text-gray-700">
-                  <span>Uploading receipt...</span>
-                  <span>{Math.round(uploadProgress)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className="bg-[#4400B8] h-2.5 rounded-full"
-                    style={{ width: `${uploadProgress}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
+      {/* Payment Actions */}
+      {paymentMethod === "terraswitch" ? (
+        // Terra Switching Payment Section
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">
+            Secure Online Payment
+          </h3>
+          <p className="text-sm text-gray-600 mb-6">
+            Click the button below to proceed to our secure payment portal.
+            You'll be redirected to Terra Switching's secure checkout where you
+            can pay using your preferred method.
+          </p>
 
+          <div className="flex justify-center">
             <button
-              onClick={handleUploadReceipt}
-              disabled={isSubmitting}
-              className={`px-4 py-1.5 bg-[#4400B8] text-white rounded-lg text-sm font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50 flex items-center ${
-                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+              onClick={handlePayOnline}
+              disabled={isSubmitting || terraLoading}
+              className={`px-8 py-3 bg-[#4400B8] text-white rounded-lg text-lg font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50 flex items-center transition-colors ${
+                isSubmitting || terraLoading
+                  ? "opacity-70 cursor-not-allowed"
+                  : ""
               }`}
             >
-              {isSubmitting && selectedFile && (
+              {(isSubmitting || terraLoading) && (
                 <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -470,11 +647,134 @@ const PayInvoice: React.FC = () => {
                   ></path>
                 </svg>
               )}
-              Submit Receipt
+              {isSubmitting || terraLoading
+                ? "Generating Payment Link..."
+                : "Pay Now with Terra Switching"}
             </button>
           </div>
-        )}
-      </div>
+
+          <div className="mt-4 text-center">
+            <p className="text-xs text-gray-500">
+              Secured by Terra Switching • Multiple payment options available
+            </p>
+          </div>
+        </div>
+      ) : (
+        // Manual Payment Section
+        <div className="space-y-6">
+          {/* Bank Details */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Bank Transfer Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Account Name
+                </label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {bankDetails.accountName}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Bank Name
+                </label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {bankDetails.bankName}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Account Number
+                </label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {bankDetails.accountNumber}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">
+                  Reference Code
+                </label>
+                <p className="mt-1 text-sm text-gray-900">
+                  {invoiceData?.invoiceNumber}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* File Upload */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Upload Payment Receipt
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              After making the transfer, please upload your payment receipt for
+              verification.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#4400B8]/10 file:text-[#4400B8] hover:file:bg-[#4400B8]/20"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Accepted formats: PDF, JPG, PNG (Max 10MB)
+                </p>
+              </div>
+
+              {uploadProgress > 0 && uploadProgress < 100 && (
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-[#4400B8] h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              )}
+
+              <button
+                onClick={handleUploadReceipt}
+                disabled={!selectedFile || isSubmitting}
+                className={`w-full px-4 py-3 bg-[#4400B8] text-white rounded-lg font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50 flex items-center justify-center transition-colors ${
+                  !selectedFile || isSubmitting
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                {isSubmitting && selectedFile && (
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                )}
+                {isSubmitting && selectedFile
+                  ? "Uploading Receipt..."
+                  : "Upload Receipt"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
