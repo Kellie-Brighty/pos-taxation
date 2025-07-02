@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header, Hero, WhatIs, HowItWorks, Footer } from "../components/layout";
 import { ScrollToTop } from "../components/shared";
+import {
+  taxStatusService,
+} from "../services/tax-status.service";
 
 interface TaxStatusResponse {
   success: boolean;
@@ -24,7 +27,6 @@ const LandingPage: React.FC = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusData, setStatusData] = useState<TaxStatusResponse | null>(null);
-  const [isCompliant, setIsCompliant] = useState(true); // Track alternating status
   const [searchData, setSearchData] = useState({
     identifier: "", // Phone number or TIN
     period: "",
@@ -47,35 +49,38 @@ const LandingPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call with alternating status
-      const response = await new Promise<TaxStatusResponse>((resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              success: true,
-              message: "Tax status retrieved successfully",
-              data: {
-                agentName: "John Doe",
-                phoneNumber: "08012345678",
-                tin: "1234567890",
-                bankName: "First Bank",
-                status: isCompliant ? "compliant" : "defaulting",
-                period: searchData.period,
-                amountPaid: 5000,
-                dueDate: "2024-04-30",
-                defaultAmount: 2000,
-              },
-            }),
-          1500
-        )
+      // Use the real tax status service
+      const response = await taxStatusService.checkStatus(
+        searchData.identifier,
+        searchData.period
       );
 
-      setStatusData(response);
-      setShowStatusModal(true);
-      // Toggle the status for next check
-      setIsCompliant((prev) => !prev);
+      if (response.success && response.data) {
+        // Convert the service response to match the existing interface
+        const convertedResponse: TaxStatusResponse = {
+          success: response.success,
+          message: response.message,
+          data: {
+            agentName: response.data.agentName,
+            phoneNumber: response.data.phoneNumber,
+            tin: response.data.tin,
+            bankName: response.data.bankName,
+            status: response.data.status,
+            period: response.data.period,
+            amountPaid: response.data.amountPaid,
+            dueDate: response.data.dueDate,
+            defaultAmount: response.data.defaultAmount,
+          },
+        };
+        setStatusData(convertedResponse);
+        setShowStatusModal(true);
+      } else {
+        // Show error message if no agent found or other issues
+        alert(response.message || "Failed to check tax status");
+      }
     } catch (error) {
       console.error("Failed to check tax status:", error);
+      alert("Failed to check tax status. Please try again later.");
     } finally {
       setIsLoading(false);
     }
