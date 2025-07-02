@@ -485,7 +485,7 @@ const SubmitTaxReport: React.FC = () => {
       try {
         // Parse form values
         const transactionVolumeNum = parseNumberInput(
-          transactionVolume,
+      transactionVolume,
           "volume"
         );
         const profitBaselineNum = parseNumberInput(profitBaseline, "profit");
@@ -651,11 +651,11 @@ const SubmitTaxReport: React.FC = () => {
   return (
     <div className="p-4 md:p-6 space-y-6 md:space-y-8">
       <div className="flex justify-between items-center">
-        <div>
+      <div>
           <h1 className="text-xl md:text-2xl font-semibold text-gray-900">
             {isResubmission ? "Revise Tax Report" : "Declare POS Income"}
-          </h1>
-          <p className="mt-2 text-sm text-gray-600">
+        </h1>
+        <p className="mt-2 text-sm text-gray-600">
             {isResubmission
               ? "Your previous submission was rejected. Please review the feedback and make necessary changes."
               : "Enter the details below to generate your tax invoice. Ensure all information is accurate, as it will be used to calculate your tax obligation."}
@@ -1220,14 +1220,14 @@ const SubmitTaxReport: React.FC = () => {
             onSubmit={handleSubmit}
             className="max-w-3xl space-y-6 md:space-y-8"
           >
-            {/* File Upload Section */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+        {/* File Upload Section */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
                 Upload Supporting Document{" "}
                 {isResubmission
                   ? "(Upload a new document or keep the previous one)"
                   : "(Required)"}
-              </label>
+          </label>
 
               {/* Show previous document if this is a resubmission */}
               {isResubmission && previousDocumentURL && !file && (
@@ -1304,43 +1304,43 @@ const SubmitTaxReport: React.FC = () => {
                 </div>
               )}
 
-              <div
-                onClick={() => fileInputRef.current?.click()}
+          <div
+            onClick={() => fileInputRef.current?.click()}
                 className="mt-1 flex justify-center px-4 md:px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:border-[#4400B8] transition-colors"
-              >
-                <div className="space-y-1 text-center">
-                  <svg
+          >
+            <div className="space-y-1 text-center">
+              <svg
                     className="mx-auto h-10 w-10 md:h-12 md:w-12 text-gray-400"
-                    stroke="currentColor"
-                    fill="none"
-                    viewBox="0 0 48 48"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                      strokeWidth={2}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium text-[#4400B8]">
-                      Click to upload
-                    </span>{" "}
-                    or drag and drop
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Accepted formats: PDF, DOC, DOCX, XLS, XLSX
-                  </p>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.xls,.xlsx"
-                  onChange={handleFileChange}
+                stroke="currentColor"
+                fill="none"
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+              >
+                <path
+                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
+              </svg>
+              <div className="text-sm text-gray-600">
+                <span className="font-medium text-[#4400B8]">
+                  Click to upload
+                </span>{" "}
+                or drag and drop
               </div>
+              <p className="text-xs text-gray-500">
+                Accepted formats: PDF, DOC, DOCX, XLS, XLSX
+              </p>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx,.xls,.xlsx"
+              onChange={handleFileChange}
+            />
+          </div>
 
               {/* Display file selection success message */}
               {fileSelected && (
@@ -1368,7 +1368,7 @@ const SubmitTaxReport: React.FC = () => {
               )}
 
               {/* Display the selected file */}
-              {file && (
+          {file && (
                 <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -1437,70 +1437,70 @@ const SubmitTaxReport: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+          )}
+        </div>
 
-            {/* Transaction Volume Input */}
-            <div className="space-y-2">
-              <label
-                htmlFor="transactionVolume"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Total POS Transaction Volume (₦) (Required)
-              </label>
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="transactionVolume"
-                  value={transactionVolume}
-                  onChange={(e) => setTransactionVolume(e.target.value)}
-                  className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#4400B8] focus:ring-[#4400B8] sm:text-sm"
+        {/* Transaction Volume Input */}
+        <div className="space-y-2">
+          <label
+            htmlFor="transactionVolume"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Total POS Transaction Volume (₦) (Required)
+          </label>
+          <div className="mt-1">
+            <input
+              type="text"
+              id="transactionVolume"
+              value={transactionVolume}
+              onChange={(e) => setTransactionVolume(e.target.value)}
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#4400B8] focus:ring-[#4400B8] sm:text-sm"
                   placeholder="₦ 25,000,000"
-                  required
-                />
-              </div>
-            </div>
+              required
+            />
+          </div>
+        </div>
 
-            {/* Profit Baseline Input */}
-            <div className="space-y-2">
-              <label
-                htmlFor="profitBaseline"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Average Profit Baseline (%) (Required)
-              </label>
-              <div className="mt-1">
-                <input
-                  type="text"
-                  id="profitBaseline"
-                  value={profitBaseline}
-                  onChange={(e) => setProfitBaseline(e.target.value)}
-                  className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#4400B8] focus:ring-[#4400B8] sm:text-sm"
+        {/* Profit Baseline Input */}
+        <div className="space-y-2">
+          <label
+            htmlFor="profitBaseline"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Average Profit Baseline (%) (Required)
+          </label>
+          <div className="mt-1">
+            <input
+              type="text"
+              id="profitBaseline"
+              value={profitBaseline}
+              onChange={(e) => setProfitBaseline(e.target.value)}
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#4400B8] focus:ring-[#4400B8] sm:text-sm"
                   placeholder="20%"
-                  required
-                />
-              </div>
-            </div>
+              required
+            />
+          </div>
+        </div>
 
-            {/* Additional Notes */}
-            <div className="space-y-2">
-              <label
-                htmlFor="notes"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Additional Notes (Optional)
-              </label>
-              <div className="mt-1">
-                <textarea
-                  id="notes"
-                  rows={4}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#4400B8] focus:ring-[#4400B8] sm:text-sm"
+        {/* Additional Notes */}
+        <div className="space-y-2">
+          <label
+            htmlFor="notes"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Additional Notes (Optional)
+          </label>
+          <div className="mt-1">
+            <textarea
+              id="notes"
+              rows={4}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-[#4400B8] focus:ring-[#4400B8] sm:text-sm"
                   placeholder="Any additional information about this tax report"
-                />
-              </div>
-            </div>
+            />
+          </div>
+        </div>
 
             {/* Tax Calculation Preview */}
             <div className="p-4 bg-gray-50 rounded-lg">
@@ -1583,22 +1583,22 @@ const SubmitTaxReport: React.FC = () => {
               </div>
             </div>
 
-            {/* Confirmation Checkbox */}
+        {/* Confirmation Checkbox */}
             <div className="flex items-start">
               <div className="flex items-center h-5">
-                <input
-                  id="confirm"
-                  type="checkbox"
-                  checked={isConfirmed}
-                  onChange={(e) => setIsConfirmed(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-[#4400B8] focus:ring-[#4400B8]"
+          <input
+            id="confirm"
+            type="checkbox"
+            checked={isConfirmed}
+            onChange={(e) => setIsConfirmed(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-[#4400B8] focus:ring-[#4400B8]"
                   disabled={isSubmitting}
-                />
+          />
               </div>
-              <label htmlFor="confirm" className="ml-2 text-sm text-gray-600">
-                I confirm that the details provided are accurate and up to date.
-              </label>
-            </div>
+          <label htmlFor="confirm" className="ml-2 text-sm text-gray-600">
+            I confirm that the details provided are accurate and up to date.
+          </label>
+        </div>
 
             {/* Upload Progress */}
             {isSubmitting && uploadProgress > 0 && uploadProgress < 100 && (
@@ -1616,19 +1616,19 @@ const SubmitTaxReport: React.FC = () => {
               </div>
             )}
 
-            {/* Submit Button */}
-            <div>
-              <button
-                type="submit"
+        {/* Submit Button */}
+        <div>
+          <button
+            type="submit"
                 disabled={isSubmitting || !isConfirmed}
                 className={`px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center ${
                   isSubmitting
                     ? "bg-[#4400B8]/70 cursor-wait"
                     : isConfirmed
-                    ? "bg-[#4400B8] hover:bg-[#4400B8]/90"
-                    : "bg-gray-300 cursor-not-allowed"
-                }`}
-              >
+                ? "bg-[#4400B8] hover:bg-[#4400B8]/90"
+                : "bg-gray-300 cursor-not-allowed"
+            }`}
+          >
                 {isSubmitting && (
                   <svg
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -1656,9 +1656,9 @@ const SubmitTaxReport: React.FC = () => {
                   : isResubmission
                   ? "Update Report"
                   : "Submit and Generate Invoice"}
-              </button>
-            </div>
-          </form>
+          </button>
+        </div>
+      </form>
         </>
       )}
     </div>

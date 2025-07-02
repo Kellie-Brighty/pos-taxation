@@ -65,8 +65,14 @@ const GovernmentLogin: React.FC = () => {
       if (userData.role === "government") {
         navigate("/government/dashboard");
       } else {
-        // If logged in but not government, show error
-        showToast("You don't have government portal access", "error");
+        // If logged in but not government, show error and redirect
+        showToast(
+          "You're already logged in with a different account. Please log out first to access the government portal.",
+          "error"
+        );
+        setTimeout(() => {
+          navigate("/");
+        }, 2000); // Redirect after 2 seconds to show the error message
       }
     }
   }, [currentUser, userData, loading, navigate, showToast]);

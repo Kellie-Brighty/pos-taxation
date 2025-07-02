@@ -84,9 +84,9 @@ const PayInvoice: React.FC = () => {
         }
 
         // Check if invoice is already paid
-        if (data.status === "paid") {
-          setError("This invoice has already been paid");
-          setLoading(false);
+        if (data.paymentStatus === "success") {
+          // Navigate back to invoice details if already paid
+          navigate(`/bank/dashboard/invoices/${id}`);
           return;
         }
 
@@ -104,7 +104,7 @@ const PayInvoice: React.FC = () => {
     };
 
     fetchInvoiceData();
-  }, [id, currentUser]);
+  }, [id, currentUser, navigate]);
 
   /**
    * Clear errors when switching payment methods
@@ -154,12 +154,23 @@ const PayInvoice: React.FC = () => {
       });
 
       console.log("[PayInvoice] Payment initialized successfully:", response);
-      console.log("[PayInvoice] Payment link:", response.data.link);
 
       // Store the payment link
       setPaymentLink(response.data.link);
 
-      // Redirect directly to Terra Switching payment page
+      // Store the slug in localStorage for payment verification
+      localStorage.setItem("terra_payment_slug", response.data.slug);
+      localStorage.setItem("terra_invoice_id", id); // Also store invoice ID for reference
+
+      // Update invoice with Terra data
+      const invoiceRef = doc(db, "invoices", id);
+      await updateDoc(invoiceRef, {
+        paymentLink: response.data.link,
+        paymentStatus: "payment_link_generated",
+        updatedAt: serverTimestamp(),
+      });
+
+      // Redirect to Terra Switching payment page
       window.location.href = response.data.link;
     } catch (err) {
       console.error("Error processing Terra Switching payment:", err);
@@ -173,6 +184,7 @@ const PayInvoice: React.FC = () => {
       }
 
       setError(errorMessage);
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -263,6 +275,52 @@ const PayInvoice: React.FC = () => {
           <p className="mt-2 text-sm text-gray-600">
             Loading payment details...
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  /**
+   * If invoice is already paid, show success message
+   */
+  if (invoiceData?.paymentStatus === "success") {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-green-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">
+                This invoice has already been paid.
+              </p>
+              <p className="mt-1 text-sm text-green-700">
+                Payment was completed successfully. You can view the details in
+                your invoice history.
+              </p>
+              <div className="mt-4">
+                <button
+                  onClick={() => navigate("/bank/dashboard/invoices")}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+                >
+                  Return to Invoices
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

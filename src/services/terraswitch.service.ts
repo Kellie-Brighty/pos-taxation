@@ -113,41 +113,42 @@ export class TerraswitchService {
         Object.fromEntries(response.headers.entries())
       );
 
+      // Read the response body once and store it
+      const responseBody = await response.text();
+      let responseData;
+      try {
+        responseData = JSON.parse(responseBody);
+      } catch (e) {
+        responseData = responseBody;
+      }
+
+      console.log(`[TerraSwitch] Response Body:`, responseData);
+
       // Check if response is ok first
       if (!response.ok) {
         console.error(
           `[TerraSwitch] HTTP Error: ${response.status} ${response.statusText}`
         );
 
-        // Try to get error response body
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          errorData = await response.text();
-        }
-
-        console.error(`[TerraSwitch] Error Response:`, errorData);
-
         // Extract meaningful error message from Terra Switching response
         let errorMessage = "Payment processing failed";
 
-        if (errorData && typeof errorData === "object") {
+        if (responseData && typeof responseData === "object") {
           // Handle Terra Switching error format
           if (
-            errorData.errors &&
-            Array.isArray(errorData.errors) &&
-            errorData.errors.length > 0
+            responseData.errors &&
+            Array.isArray(responseData.errors) &&
+            responseData.errors.length > 0
           ) {
             // Extract first error message from errors array
-            errorMessage = errorData.errors[0];
-          } else if (errorData.message) {
-            errorMessage = errorData.message;
-          } else if (errorData.error) {
-            errorMessage = errorData.error;
+            errorMessage = responseData.errors[0];
+          } else if (responseData.message) {
+            errorMessage = responseData.message;
+          } else if (responseData.error) {
+            errorMessage = responseData.error;
           }
-        } else if (typeof errorData === "string") {
-          errorMessage = errorData;
+        } else if (typeof responseData === "string") {
+          errorMessage = responseData;
         }
 
         // Add HTTP status context if it's not already in the message
@@ -160,14 +161,11 @@ export class TerraswitchService {
 
         throw new TerraApiError(
           errorMessage,
-          errorData?.code || `HTTP_${response.status}`,
-          errorData?.field,
-          errorData
+          responseData?.code || `HTTP_${response.status}`,
+          responseData?.field,
+          responseData
         );
       }
-
-      const responseData = await response.json();
-      console.log(`[TerraSwitch] Success Response:`, responseData);
 
       // Check if Terra Switching returned an error in the response body
       if (responseData.error === true || responseData.status === false) {
@@ -198,7 +196,7 @@ export class TerraswitchService {
         (responseData.status && responseData.status !== 200)
       ) {
         throw new TerraApiError(
-          responseData.message || "Terra Switching operation failed",
+          responseData.message || "Operation failed",
           "OPERATION_FAILED",
           undefined,
           responseData
@@ -207,42 +205,16 @@ export class TerraswitchService {
 
       return responseData as T;
     } catch (error) {
-      console.error("[TerraSwitch] API Error Details:", error);
-
+      // Re-throw TerraApiError instances
       if (error instanceof TerraApiError) {
         throw error;
       }
 
-      // Handle network errors specifically
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        console.error("[TerraSwitch] Network/CORS Error - Check:");
-        console.error("1. API URL:", this.baseURL);
-        console.error("2. Internet connection");
-        console.error("3. CORS configuration");
-        console.error("4. API endpoint availability");
-
-        throw new TerraApiError(
-          `Network error: Unable to connect to Terra Switching API. Check console for details.`,
-          "NETWORK_ERROR",
-          undefined,
-          error
-        );
-      }
-
-      if (error instanceof Error) {
-        throw new TerraApiError(
-          `Request error: ${error.message}`,
-          "REQUEST_ERROR",
-          undefined,
-          error
-        );
-      }
-
+      // Convert other errors to TerraApiError
+      console.error("[TerraSwitch] Request failed:", error);
       throw new TerraApiError(
-        "Unknown error occurred",
-        "UNKNOWN_ERROR",
-        undefined,
-        error
+        error instanceof Error ? error.message : "Request failed",
+        "REQUEST_FAILED"
       );
     }
   }
@@ -306,7 +278,7 @@ export class TerraswitchService {
           params.description || `Tax payment for invoice ${params.invoiceId}`,
         redirectUrl:
           params.callbackUrl ||
-          `${window.location.origin}/bank/dashboard/invoices/${params.invoiceId}`,
+          `${window.location.origin}/bank/dashboard/invoices/${params.invoiceId}/payment-callback`,
         subaccounts: [],
         message: "Thank you for your tax payment",
         customer: {
@@ -340,14 +312,22 @@ export class TerraswitchService {
         params.bankId
       );
 
-      // Update invoice with Terra transaction reference
-      await updateDoc(doc(db, "invoices", params.invoiceId), {
-        terraTransactionRef: response.data.slug,
-        terraAccessCode: response.data.slug,
-        paymentLink: response.data.link,
+      // Create update object with only defined values
+      const updateData: any = {
         paymentStatus: "payment_link_generated",
+        paymentLink: response.data.link,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // Only add reference fields if they exist
+      if (response.data.reference) {
+        updateData.terraTransactionRef = response.data.reference;
+        updateData.terraAccessCode = response.data.reference;
+        updateData.paymentReference = response.data.reference;
+      }
+
+      // Update invoice with Terra transaction reference
+      await updateDoc(doc(db, "invoices", params.invoiceId), updateData);
 
       return response;
     } catch (error) {
@@ -360,19 +340,18 @@ export class TerraswitchService {
    * Verify a payment transaction
    * Called after a payment is completed to confirm its status
    */
-  async verifyPayment(reference: string): Promise<PaymentVerificationResponse> {
+  async verifyPayment(slug: string): Promise<PaymentVerificationResponse> {
     try {
-      const response = await this.makeRequest<PaymentVerificationResponse>(
-        `${TERRASWITCH_ENDPOINTS.VERIFY_TRANSACTION}/${reference}`,
-        "GET"
-      );
+      if (!slug) {
+        throw new Error("Payment slug is required");
+      }
 
-      // Log the verification
-      await this.logTransaction(
-        "payment_verified",
-        response,
-        response.data.metadata?.invoiceId,
-        response.data.metadata?.bankId
+      console.log("[TerraSwitch] Verifying payment:", slug);
+
+      const response = await this.makeRequest<PaymentVerificationResponse>(
+        TERRASWITCH_ENDPOINTS.VERIFY_TRANSACTION,
+        "POST",
+        { reference: slug }
       );
 
       return response;

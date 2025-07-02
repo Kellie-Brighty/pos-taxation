@@ -101,7 +101,7 @@ const AdminLogin: React.FC = () => {
         setIsCreatingAdmin(false);
         setAdminExists(true);
         setAdminEmails([formData.email]);
-      } else {
+    } else {
         // Authenticating with Firebase
         await signIn(formData.email, formData.password);
         // Check if the authenticated user is an admin will be handled by the useEffect
@@ -118,15 +118,15 @@ const AdminLogin: React.FC = () => {
   };
 
   const renderLoginForm = () => (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
             Admin Email
-          </label>
+                      </label>
           {adminEmails.length > 0 ? (
             <select
               id="email"
@@ -146,50 +146,50 @@ const AdminLogin: React.FC = () => {
               ))}
             </select>
           ) : (
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-sm"
-              placeholder="Enter your email address"
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-sm"
+                        placeholder="Enter your email address"
               required
-            />
+                      />
           )}
-        </div>
+                    </div>
 
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-sm"
-            placeholder="Enter your password"
+                    <div>
+                      <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Password
+                      </label>
+                      <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#4400B8]/20 focus:border-[#4400B8] transition-colors text-sm"
+                        placeholder="Enter your password"
             required
-          />
-        </div>
-      </div>
+                      />
+                    </div>
+                  </div>
 
       <div className="flex items-center justify-end">
-        <Link
-          to="/admin/forgot-password"
-          className="text-sm text-[#4400B8] hover:text-[#4400B8]/80"
-        >
-          Forgot password?
-        </Link>
-      </div>
+                    <Link
+                      to="/admin/forgot-password"
+                      className="text-sm text-[#4400B8] hover:text-[#4400B8]/80"
+                    >
+                      Forgot password?
+                    </Link>
+                  </div>
 
-      <button
-        type="submit"
+                  <button
+                    type="submit"
         disabled={isLoading || !formData.email || !formData.password}
         className="w-full bg-[#4400B8] hover:bg-[#4400B8]/90 text-white py-3 px-6 rounded-lg transition-colors text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
@@ -322,8 +322,8 @@ const AdminLogin: React.FC = () => {
         ) : (
           "Create Admin Account"
         )}
-      </button>
-    </form>
+                  </button>
+                </form>
   );
 
   return (

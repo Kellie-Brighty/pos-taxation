@@ -31,6 +31,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
+import { PaymentStatus, InvestigationStatus } from "../types/api.types";
 
 // =============================================
 // WEBHOOK EVENT TYPES
@@ -260,25 +261,40 @@ export class WebhookService {
         reference: paymentData.reference,
       });
 
-      // Update invoice status
-      await updateDoc(doc(db, "invoices", invoiceId), {
-        status: "paid",
+      // Create update object with only defined values
+      const updateData: any = {
+        paymentStatus: "success" as PaymentStatus,
+        investigationStatus: "pending_review" as InvestigationStatus, // Set for admin review
         paymentMethod: "terraswitch",
-        paymentReference: paymentData.reference,
-        terraTransactionId: paymentData.id,
-        paidAmount: amount,
-        paidDate: serverTimestamp(),
-        terraPaymentData: paymentData,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // Only add fields that are defined
+      if (paymentData.reference) {
+        updateData.paymentReference = paymentData.reference;
+      }
+      if (paymentData.id) {
+        updateData.terraTransactionId = paymentData.id;
+      }
+      if (amount) {
+        updateData.paidAmount = amount;
+      }
+      if (paymentData) {
+        updateData.terraPaymentData = paymentData;
+        updateData.paidDate = serverTimestamp();
+      }
+
+      // Update invoice status
+      await updateDoc(doc(db, "invoices", invoiceId), updateData);
 
       // Update tax report status if available
       if (paymentData.metadata.taxReportId) {
         await updateDoc(
           doc(db, "taxReports", paymentData.metadata.taxReportId),
           {
-            status: "paid",
-            paymentReference: paymentData.reference,
+            paymentStatus: "success" as PaymentStatus,
+            investigationStatus: "pending_review" as InvestigationStatus,
+            paymentReference: paymentData.reference || null,
             updatedAt: serverTimestamp(),
           }
         );
@@ -292,8 +308,6 @@ export class WebhookService {
         bankId: paymentData.metadata.bankId,
         bankName: paymentData.metadata.bankName,
       });
-
-      console.log("[Webhook Service] Successfully processed payment webhook");
     } catch (error) {
       console.error(
         "[Webhook Service] Failed to handle successful payment:",
@@ -320,7 +334,8 @@ export class WebhookService {
 
       // Update invoice status
       await updateDoc(doc(db, "invoices", invoiceId), {
-        paymentStatus: "failed",
+        paymentStatus: "failed" as PaymentStatus,
+        investigationStatus: "pending_review" as InvestigationStatus,
         paymentReference: paymentData.reference,
         terraTransactionId: paymentData.id,
         failureReason: paymentData.gateway_response,
@@ -333,7 +348,8 @@ export class WebhookService {
         await updateDoc(
           doc(db, "taxReports", paymentData.metadata.taxReportId),
           {
-            status: "payment_failed",
+            paymentStatus: "failed" as PaymentStatus,
+            investigationStatus: "pending_review" as InvestigationStatus,
             paymentReference: paymentData.reference,
             failureReason: paymentData.gateway_response,
             updatedAt: serverTimestamp(),

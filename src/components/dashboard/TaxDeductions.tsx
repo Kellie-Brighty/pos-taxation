@@ -187,92 +187,92 @@ const TaxDeductions: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap gap-2 sm:gap-4">
-          <select
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="rounded-lg border-gray-300 text-sm focus:ring-[#4400B8] focus:border-[#4400B8]"
-          >
-            <option value="all">Date</option>
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-          </select>
+        <select
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+          className="rounded-lg border-gray-300 text-sm focus:ring-[#4400B8] focus:border-[#4400B8]"
+        >
+          <option value="all">Date</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+        </select>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border-gray-300 text-sm focus:ring-[#4400B8] focus:border-[#4400B8]"
-          >
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="rounded-lg border-gray-300 text-sm focus:ring-[#4400B8] focus:border-[#4400B8]"
+        >
             <option value="all">Status</option>
-            <option value="paid">Paid</option>
-            <option value="pending">Pending</option>
-            <option value="overdue">Overdue</option>
-          </select>
+          <option value="paid">Paid</option>
+          <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+        </select>
 
-          <button
-            onClick={() => {
-              setDateFilter("all");
-              setStatusFilter("all");
-            }}
-            className="text-[#4400B8] text-sm font-medium hover:text-[#4400B8]/80 flex items-center gap-1"
+        <button
+          onClick={() => {
+            setDateFilter("all");
+            setStatusFilter("all");
+          }}
+          className="text-[#4400B8] text-sm font-medium hover:text-[#4400B8]/80 flex items-center gap-1"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
             Reset
-          </button>
+        </button>
         </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <ResponsiveTable>
+      <ResponsiveTable>
           <table ref={tableRef} className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
+          <thead className="bg-gray-50">
+            <tr>
+              <th
+                scope="col"
                   className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Date
-                </th>
-                <th
-                  scope="col"
+              >
+                Date
+              </th>
+              <th
+                scope="col"
                   className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Total POS Earnings
-                </th>
-                <th
-                  scope="col"
+              >
+                Total POS Earnings
+              </th>
+              <th
+                scope="col"
                   className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Tax Deducted
-                </th>
-                <th
-                  scope="col"
+              >
+                Tax Deducted
+              </th>
+              <th
+                scope="col"
                   className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell"
-                >
-                  Tax Remitted
-                </th>
-                <th
-                  scope="col"
+              >
+                Tax Remitted
+              </th>
+              <th
+                scope="col"
                   className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+              >
+                Status
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
                   <td colSpan={5} className="px-3 md:px-6 py-4 text-center">
@@ -297,32 +297,32 @@ const TaxDeductions: React.FC = () => {
                 filteredDeductions.map((deduction) => (
                   <tr key={deduction.id} className="hover:bg-gray-50">
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {deduction.date}
-                    </td>
+                  {deduction.date}
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCurrency(deduction.totalPOSEarnings)}
-                    </td>
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCurrency(deduction.taxDeducted)}
-                    </td>
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden sm:table-cell">
                       {formatCurrency(deduction.taxRemitted)}
-                    </td>
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                          deduction.status
-                        )}`}
-                      >
-                        {deduction.status}
-                      </span>
-                    </td>
-                  </tr>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                      deduction.status
+                    )}`}
+                  >
+                    {deduction.status}
+                  </span>
+                </td>
+              </tr>
                 ))
               )}
-            </tbody>
-          </table>
-        </ResponsiveTable>
+          </tbody>
+        </table>
+      </ResponsiveTable>
       </div>
 
       {/* Export Button */}

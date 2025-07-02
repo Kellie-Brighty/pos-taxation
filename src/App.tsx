@@ -7,11 +7,7 @@ import {
 } from "react-router-dom";
 import { ToastProvider } from "./components/common/Toast";
 import {
-  // SelectRegistrationType, // No longer needed
   BankRegister,
-  // POSRegister,
-  // POSBusinessInfo,
-  // POSVerification,
   BankDetails,
   BankVerification,
   AdminLogin,
@@ -21,19 +17,15 @@ import {
   ProtectedRoute,
 } from "./components/auth";
 import {
-  // Dashboard,
-  // DashboardLayout,
-  // TaxSummary,
   InvoicesReceipts,
   Settings,
   BankDashboard,
   BankDashboardLayout,
   SubmitTaxReport,
   TaxDeductions,
-  // POSAgents,
-  // AddPOSAgent,
   InvoiceDetails,
   PayInvoice,
+  PaymentCallback,
   AdminDashboard,
   AdminDashboardLayout,
   GovernmentDashboard,
@@ -161,6 +153,10 @@ const App: React.FC = () => {
                     <Route path="settings" element={<Settings />} />
                     <Route path="invoices/:id" element={<InvoiceDetails />} />
                     <Route path="invoices/:id/pay" element={<PayInvoice />} />
+                    <Route
+                      path="invoices/:id/payment-callback"
+                      element={<PaymentCallback />}
+                    />
                     <Route path="pos-agents" element={<POSAgents />} />
                     <Route path="pos-agents/add" element={<AddPOSAgent />} />
                   </Route>

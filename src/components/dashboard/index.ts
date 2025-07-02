@@ -22,3 +22,4 @@ export { default as PaymentsManagement } from "./PaymentsManagement";
 export { default as ReportsManagement } from "./ReportsManagement";
 export { default as BankSubmissionsManagement } from "./BankSubmissionsManagement";
 export { default as BankSubmissionDetails } from "./BankSubmissionDetails";
+export { default as PaymentCallback } from "./PaymentCallback";

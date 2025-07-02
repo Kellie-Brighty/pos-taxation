@@ -289,15 +289,15 @@ const InvoicesReceipts: React.FC = () => {
           </select>
 
           {!isGovernment && (
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-lg border-gray-300 text-sm focus:ring-[#4400B8] focus:border-[#4400B8]"
-            >
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-lg border-gray-300 text-sm focus:ring-[#4400B8] focus:border-[#4400B8]"
+          >
               <option value="all">Status</option>
-              <option value="paid">Paid</option>
-              <option value="pending">Pending</option>
-            </select>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+          </select>
           )}
 
           <button
@@ -327,9 +327,9 @@ const InvoicesReceipts: React.FC = () => {
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <ResponsiveTable>
+      <ResponsiveTable>
           <table ref={tableRef} className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <thead className="bg-gray-50">
               {isGovernment ? (
                 <tr>
                   <th
@@ -364,40 +364,40 @@ const InvoicesReceipts: React.FC = () => {
                   </th>
                 </tr>
               ) : (
-                <tr>
-                  <th
-                    scope="col"
+            <tr>
+              <th
+                scope="col"
                     className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Date
-                  </th>
-                  <th
-                    scope="col"
+              >
+                Date
+              </th>
+              <th
+                scope="col"
                     className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Invoice Number
-                  </th>
-                  <th
-                    scope="col"
+              >
+                Invoice Number
+              </th>
+              <th
+                scope="col"
                     className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Tax Amount
-                  </th>
-                  <th
-                    scope="col"
+              >
+                Tax Amount
+              </th>
+              <th
+                scope="col"
                     className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Status
-                  </th>
-                  <th
-                    scope="col"
+              >
+                Status
+              </th>
+              <th
+                scope="col"
                     className="px-3 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    Actions
-                  </th>
-                </tr>
+              >
+                Actions
+              </th>
+            </tr>
               )}
-            </thead>
+          </thead>
             <tbody>
               {loading ? (
                 <tr>
@@ -456,52 +456,52 @@ const InvoicesReceipts: React.FC = () => {
                 </tr>
               ) : (
                 filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
+              <tr key={invoice.id} className="hover:bg-gray-50">
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.date}
-                    </td>
+                  {invoice.date}
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {invoice.invoiceNumber}
-                    </td>
+                  {invoice.invoiceNumber}
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {formatCurrency(invoice.taxAmount)}
-                    </td>
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                          invoice.status
-                        )}`}
-                      >
-                        {invoice.status}
-                      </span>
-                    </td>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
+                      invoice.status
+                    )}`}
+                  >
+                    {invoice.status}
+                  </span>
+                </td>
                     <td className="px-3 md:px-6 py-4 whitespace-nowrap text-sm">
-                      <Link
-                        to={`/bank/dashboard/invoices/${invoice.id}`}
-                        className="text-[#4400B8] font-medium hover:text-[#4400B8]/80 flex items-center gap-2"
-                      >
-                        View details
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </Link>
-                    </td>
-                  </tr>
+                  <Link
+                    to={`/bank/dashboard/invoices/${invoice.id}`}
+                    className="text-[#4400B8] font-medium hover:text-[#4400B8]/80 flex items-center gap-2"
+                  >
+                    View details
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+                </td>
+              </tr>
                 ))
               )}
-            </tbody>
-          </table>
-        </ResponsiveTable>
+          </tbody>
+        </table>
+      </ResponsiveTable>
       </div>
 
       {/* Export Button */}

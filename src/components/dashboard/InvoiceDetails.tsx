@@ -23,6 +23,8 @@ interface InvoiceData {
   resubmittedAt?: Timestamp;
   revisionCount?: number;
   paymentMethod?: string;
+  paymentStatus?: string;
+  paidDate?: Timestamp;
 }
 
 const InvoiceDetails: React.FC = () => {
@@ -88,6 +90,8 @@ const InvoiceDetails: React.FC = () => {
         resubmittedAt: data.resubmittedAt,
         revisionCount: data.revisionCount || 0,
         paymentMethod: data.paymentMethod,
+        paymentStatus: data.paymentStatus,
+        paidDate: data.paidDate,
       });
 
       setLoading(false);
@@ -133,7 +137,11 @@ const InvoiceDetails: React.FC = () => {
     return `₦${amount.toLocaleString()}`;
   };
 
-  const getStatusClass = (status: string) => {
+  const getStatusClass = (status: string, paymentStatus?: string) => {
+    if (paymentStatus === "success") {
+      return "text-green-600 bg-green-100";
+    }
+
     switch (status.toLowerCase()) {
       case "paid":
         return "text-green-600 bg-green-100";
@@ -303,11 +311,14 @@ const InvoiceDetails: React.FC = () => {
             {invoiceData && (
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusClass(
-                  invoiceData.status
+                  invoiceData.status,
+                  invoiceData.paymentStatus
                 )}`}
               >
-                {invoiceData.status.charAt(0).toUpperCase() +
-                  invoiceData.status.slice(1)}
+                {invoiceData.paymentStatus === "success"
+                  ? "Paid"
+                  : invoiceData.status.charAt(0).toUpperCase() +
+                    invoiceData.status.slice(1)}
               </span>
             )}
           </div>
@@ -471,11 +482,14 @@ const InvoiceDetails: React.FC = () => {
           <label className="text-sm font-medium text-gray-500">Status</label>
           <p
             className={`mt-1 text-sm font-medium px-2.5 py-0.5 rounded-full inline-block ${getStatusClass(
-              invoiceData.status
+              invoiceData.status,
+              invoiceData.paymentStatus
             )}`}
           >
-            {invoiceData.status.charAt(0).toUpperCase() +
-              invoiceData.status.slice(1)}
+            {invoiceData.paymentStatus === "success"
+              ? "Paid"
+              : invoiceData.status.charAt(0).toUpperCase() +
+                invoiceData.status.slice(1)}
           </p>
         </div>
         {taxReportURL && (
@@ -510,12 +524,45 @@ const InvoiceDetails: React.FC = () => {
         )}
       </div>
 
-      {/* Action Button */}
-      <div className="mt-8">
-        {invoiceData.status.toLowerCase() === "pending" && (
-          <>
-            {/* Check if payment has been made */}
-            {invoiceData.paymentMethod ? (
+      {/* Payment Status Banner */}
+      {invoiceData.paymentStatus === "success" && (
+        <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-green-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-green-800">
+                This invoice has been paid. Thank you for your payment.
+              </p>
+              {invoiceData.paidDate && (
+                <p className="mt-1 text-sm text-green-700">
+                  Paid on: {formatDate(invoiceData.paidDate)}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Button - Only show if not paid */}
+      {invoiceData.status.toLowerCase() === "pending" &&
+        invoiceData.paymentStatus !== "success" && (
+          <div className="mt-6">
+            {invoiceData.paymentStatus === "pending" &&
+            invoiceData.paymentMethod ? (
               <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
                 <div className="flex">
                   <div className="flex-shrink-0">
@@ -535,13 +582,12 @@ const InvoiceDetails: React.FC = () => {
                   </div>
                   <div className="ml-3">
                     <p className="text-sm font-medium text-yellow-800">
-                      Payment received - Waiting for administrator approval
+                      Payment is being processed - Please wait
                     </p>
                   </div>
                 </div>
               </div>
             ) : (
-              /* Show pay button only if no payment made yet or additional payment is needed */
               <button
                 onClick={handlePayNow}
                 className="px-4 py-2 bg-[#4400B8] text-white rounded-lg text-sm font-medium hover:bg-[#4400B8]/90 focus:outline-none focus:ring-2 focus:ring-[#4400B8]/50"
@@ -552,72 +598,8 @@ const InvoiceDetails: React.FC = () => {
                   : "Pay Now"}
               </button>
             )}
-          </>
-        )}
-        {invoiceData.status.toLowerCase() === "rejected" && (
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mt-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-red-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-red-800">
-                  This invoice has been rejected. Please revise your tax report
-                  with accurate information.
-                </p>
-                <button
-                  onClick={() =>
-                    navigate(
-                      `/bank/dashboard/tax-report?reportId=${invoiceData.taxReportId}`
-                    )
-                  }
-                  className="mt-2 text-sm text-red-800 underline"
-                >
-                  Revise Tax Report
-                </button>
-              </div>
-            </div>
           </div>
         )}
-        {invoiceData.status.toLowerCase() === "paid" && (
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-lg mt-4">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-green-800">
-                  This invoice has been paid. Thank you for your payment.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 };

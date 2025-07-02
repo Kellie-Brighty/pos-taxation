@@ -84,7 +84,7 @@ export const TERRASWITCH_ENDPOINTS = {
   AUTHORIZE_CHARGE: "/collections/charge/authorize",
 
   // Transaction endpoints
-  VERIFY_TRANSACTION: "/transactions/verify",
+  VERIFY_TRANSACTION: "/corporate/verify-transaction",
   LIST_TRANSACTIONS: "/transactions",
 
   // Payout endpoints
@@ -109,6 +109,9 @@ export const TERRASWITCH_ENDPOINTS = {
   WALLET_DETAILS: "/wallet/details",
   WALLET_TRANSACTIONS: "/wallet/transactions",
   BALANCE: "/wallet/details", // Alias for balance check
+
+  // New endpoints
+  TRANSFER_RECIPIENT: "/v1/transfer-recipient",
 } as const;
 
 // =============================================

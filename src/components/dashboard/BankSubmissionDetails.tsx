@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import { useAuth } from "../../context/AuthContext";
+import { PaymentStatus, InvestigationStatus } from "../../types/api.types";
 
 interface TaxReport {
   id: string;
@@ -41,7 +42,8 @@ interface Invoice {
   profitBaseline: number;
   taxRate: number;
   taxAmount: number;
-  status: string;
+  paymentStatus: PaymentStatus;
+  investigationStatus: InvestigationStatus;
   issuedDate: any;
   dueDate: any;
   paidDate?: any;
@@ -50,6 +52,9 @@ interface Invoice {
   paymentProofURL?: string;
   previousPaymentAmount?: number;
   additionalTaxAmount?: number;
+  reviewedAt?: any;
+  reviewedBy?: string;
+  rejectionReason?: string;
 }
 
 const BankSubmissionDetails: React.FC = () => {
@@ -119,7 +124,9 @@ const BankSubmissionDetails: React.FC = () => {
           profitBaseline: invoiceData.profitBaseline,
           taxRate: invoiceData.taxRate,
           taxAmount: invoiceData.taxAmount,
-          status: invoiceData.status,
+          paymentStatus: invoiceData.paymentStatus || "pending",
+          investigationStatus:
+            invoiceData.investigationStatus || "pending_review",
           issuedDate: invoiceData.issuedDate,
           dueDate: invoiceData.dueDate,
           paidDate: invoiceData.paidDate,
@@ -128,6 +135,9 @@ const BankSubmissionDetails: React.FC = () => {
           paymentProofURL: invoiceData.paymentProofURL,
           previousPaymentAmount: invoiceData.previousPaymentAmount,
           additionalTaxAmount: invoiceData.additionalTaxAmount,
+          reviewedAt: invoiceData.reviewedAt,
+          reviewedBy: invoiceData.reviewedBy,
+          rejectionReason: invoiceData.rejectionReason,
         });
       }
 
@@ -179,8 +189,9 @@ const BankSubmissionDetails: React.FC = () => {
       // Update invoice status
       const invoiceRef = doc(db, "invoices", invoice.id);
       await updateDoc(invoiceRef, {
-        status: "approved",
-        paymentStatus: "paid",
+        investigationStatus: "approved" as InvestigationStatus,
+        reviewedAt: serverTimestamp(),
+        reviewedBy: currentUser?.uid,
         updatedAt: serverTimestamp(),
       });
 
@@ -250,28 +261,30 @@ const BankSubmissionDetails: React.FC = () => {
   };
 
   const handleRejectConfirm = async () => {
-    if (!id || !taxReport || !invoice || !rejectionReason.trim()) return;
+    if (!id || !taxReport || !invoice || !rejectionReason) return;
 
     try {
       // Update tax report status
       const taxReportRef = doc(db, "taxReports", id);
       await updateDoc(taxReportRef, {
         status: "rejected",
-        rejectionReason: rejectionReason.trim(),
+        rejectionReason,
         updatedAt: serverTimestamp(),
       });
 
       // Update invoice status
       const invoiceRef = doc(db, "invoices", invoice.id);
       await updateDoc(invoiceRef, {
-        status: "rejected",
-        rejectionReason: rejectionReason.trim(),
+        investigationStatus: "rejected" as InvestigationStatus,
+        rejectionReason,
+        reviewedAt: serverTimestamp(),
+        reviewedBy: currentUser?.uid,
         updatedAt: serverTimestamp(),
       });
 
       setShowRejectModal(false);
-      // Navigate back to the submissions list
-      navigate("/admin/dashboard/bank-submissions");
+      setRejectionReason("");
+      await fetchSubmissionDetails();
     } catch (err) {
       console.error("Error rejecting submission:", err);
       setError("Failed to reject submission");
@@ -298,34 +311,31 @@ const BankSubmissionDetails: React.FC = () => {
     return `₦${amount.toLocaleString()}`;
   };
 
-  const getStatusBadgeClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "approved":
-      case "paid":
+  const getPaymentStatusBadgeClass = (status: PaymentStatus) => {
+    switch (status) {
+      case "success":
         return "bg-green-100 text-green-800";
-      case "rejected":
+      case "failed":
         return "bg-red-100 text-red-800";
-      case "pending":
+      case "processing":
+        return "bg-blue-100 text-blue-800";
       default:
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  // Helper to determine payment status display
-  // const getPaymentStatusDisplay = (
-  //   taxReport: TaxReport,
-  //   invoice: Invoice | null
-  // ) => {
-  //   if (!invoice) {
-  //     return "Pending Payment";
-  //   }
-
-  //   if (invoice.paymentMethod) {
-  //     return "Payment Received - Pending Approval";
-  //   }
-
-  //   return "Pending Payment";
-  // };
+  const getInvestigationStatusBadgeClass = (status: InvestigationStatus) => {
+    switch (status) {
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "under_review":
+        return "bg-yellow-100 text-yellow-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   // Helper to determine if this is a revised report
   const isRevisedReport = () => {
@@ -435,31 +445,47 @@ const BankSubmissionDetails: React.FC = () => {
             >
               {isRefreshing || loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-gray-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
                   Refreshing...
                 </>
               ) : (
                 <>
-                  <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <svg
+                    className="w-4 h-4 mr-1.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
                   </svg>
                   Refresh Status
                 </>
               )}
             </button>
-            <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
-                taxReport.status
-              )}`}
-            >
-              {taxReport.status === "pending" && invoice?.paymentMethod
-                ? "Payment Received - Pending Approval"
-                : taxReport.status.charAt(0).toUpperCase() +
-                  taxReport.status.slice(1)}
-            </span>
           </div>
         </div>
         <p className="mt-2 text-sm text-gray-600">
@@ -468,6 +494,122 @@ const BankSubmissionDetails: React.FC = () => {
           corrections are needed.
         </p>
       </div>
+
+      {/* Status Section */}
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              Submission Status
+            </h2>
+            <p className="mt-1 text-sm text-gray-600">
+              Current status of the tax report and payment
+            </p>
+          </div>
+        </div>
+
+        {/* Status Badges */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          {/* Payment Status Badge */}
+          <div className="flex-1 bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">
+              Payment Status
+            </h3>
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusBadgeClass(
+                invoice?.paymentStatus || "pending"
+              )}`}
+            >
+              {invoice?.paymentStatus === "success"
+                ? "Payment Successful"
+                : invoice?.paymentStatus === "failed"
+                ? "Payment Failed"
+                : invoice?.paymentStatus === "processing"
+                ? "Payment Processing"
+                : "Payment Pending"}
+            </span>
+            {invoice?.paymentMethod && (
+              <div className="mt-2 text-sm text-gray-600">
+                <p>Method: {invoice.paymentMethod}</p>
+                {invoice.paymentReference && (
+                  <p>Reference: {invoice.paymentReference}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Investigation Status Badge */}
+          <div className="flex-1 bg-gray-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-500 mb-2">
+              Review Status
+            </h3>
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getInvestigationStatusBadgeClass(
+                invoice?.investigationStatus || "pending_review"
+              )}`}
+            >
+              {invoice?.investigationStatus === "approved"
+                ? "Approved"
+                : invoice?.investigationStatus === "rejected"
+                ? "Rejected"
+                : invoice?.investigationStatus === "under_review"
+                ? "Under Review"
+                : "Pending Review"}
+            </span>
+            {invoice?.rejectionReason && (
+              <div className="mt-2 text-sm text-red-600">
+                <p>Reason: {invoice.rejectionReason}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons - Only show if payment is successful and pending review */}
+      {invoice?.paymentStatus === "success" &&
+        invoice?.investigationStatus === "pending_review" && (
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowApproveModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-300"
+            >
+              Approve Submission
+            </button>
+            <button
+              onClick={() => setShowRejectModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-300"
+            >
+              Reject Submission
+            </button>
+          </div>
+        )}
+
+      {/* Message for when payment is not yet received */}
+      {invoice?.paymentStatus !== "success" && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-yellow-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700">
+                Waiting for payment confirmation before proceeding with review.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Revision Information */}
       {isRevisedReport() && (
@@ -591,19 +733,6 @@ const BankSubmissionDetails: React.FC = () => {
                       )}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Status</span>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
-                    taxReport.status
-                  )}`}
-                >
-                  {taxReport.status === "pending" && invoice?.paymentMethod
-                    ? "Payment Received - Pending Approval"
-                    : taxReport.status.charAt(0).toUpperCase() +
-                      taxReport.status.slice(1)}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -662,8 +791,8 @@ const BankSubmissionDetails: React.FC = () => {
                     {taxReport.fileName || "Tax Report Document"}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {isRevisedReport() && taxReport.resubmittedAt
-                      ? `Revised on ${formatDate(taxReport.resubmittedAt)}`
+                    {isRevisedReport() && invoice?.reviewedAt
+                      ? `Revised on ${formatDate(invoice.reviewedAt)}`
                       : `Submitted on ${formatDate(taxReport.submittedAt)}`}
                   </p>
                 </div>
@@ -694,235 +823,109 @@ const BankSubmissionDetails: React.FC = () => {
         </div>
       </div>
 
-      {/* Payment Details */}
-      {invoice && invoice.paymentMethod && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Payment Details
-            </h2>
-          </div>
-
-          <div className="p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Payment Method</span>
-                  <span className="text-sm text-gray-900">
-                    {invoice.paymentMethod === "online"
-                      ? "Online Payment"
-                      : "Bank Transfer"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Amount Paid</span>
-                  <span className="text-sm text-gray-900">
-                    {isRevisedReport() && invoice.additionalTaxAmount
-                      ? formatCurrency(invoice.additionalTaxAmount)
-                      : formatCurrency(invoice.taxAmount)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">Date Paid</span>
-                  <span className="text-sm text-gray-900">
-                    {invoice.paidDate
-                      ? formatDate(invoice.paidDate)
-                      : "Pending"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600">
-                    Reference Number
-                  </span>
-                  <span className="text-sm text-gray-900">
-                    {invoice.paymentReference || "N/A"}
-                  </span>
-                </div>
-                {invoice.paymentProofURL && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Payment Proof</span>
-                    <a
-                      href={invoice.paymentProofURL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#4400B8] hover:text-[#4400B8]/80 flex items-center gap-1"
-                    >
-                      View Receipt
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                        />
-                      </svg>
-                    </a>
-                  </div>
-                )}
+      {/* Approve Modal */}
+      {showApproveModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg
+                  className="h-6 w-6 text-green-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mt-5">
+                Approve Submission
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to approve this tax submission? This
+                  action will confirm the payment and mark the submission as
+                  approved.
+                </p>
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  onClick={handleApproveConfirm}
+                  className="px-4 py-2 bg-green-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300"
+                >
+                  Approve
+                </button>
+                <button
+                  onClick={() => setShowApproveModal(false)}
+                  className="mt-3 px-4 py-2 bg-white text-gray-500 text-base font-medium rounded-md w-full shadow-sm border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Notes Section */}
-      {taxReport.notes && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Additional Notes
-            </h2>
-          </div>
-
-          <div className="p-6">
-            <p className="text-sm text-gray-700">{taxReport.notes}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      {taxReport.status === "pending" && invoice?.paymentMethod && (
-        <div className="flex gap-4">
-          <button
-            onClick={() => setShowApproveModal(true)}
-            className="px-6 py-2 bg-[#4400B8] text-white rounded-lg hover:bg-[#4400B8]/90 transition-colors"
-          >
-            Approve
-          </button>
-          <button
-            onClick={() => setShowRejectModal(true)}
-            className="px-6 py-2 bg-white text-red-600 border border-red-600 rounded-lg hover:bg-red-50 transition-colors"
-          >
-            Reject
-          </button>
-        </div>
-      )}
-
-      {/* Message for when payment is not yet received */}
-      {taxReport.status === "pending" && !invoice?.paymentMethod && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-r-lg">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg
-                className="h-5 w-5 text-yellow-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm font-medium text-yellow-800">
-                Awaiting payment from the bank. You'll be able to approve or
-                reject once payment is received.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Approve Confirmation Modal */}
-      {showApproveModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full space-y-6">
-            <div className="flex justify-between items-start">
-              <h3 className="text-xl font-semibold text-[#4400B8]">
-                Confirm Payment Approval?
-              </h3>
-              <button
-                onClick={() => setShowApproveModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  className="w-5 h-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
-            </div>
-            <p className="text-sm text-gray-600">
-              Are you sure you want to approve this payment? A receipt will be
-              sent to the bank's registered email once approved.
-              {isRevisedReport() && (
-                <span className="block mt-2 font-medium">
-                  This is a revised report with updated tax calculations.
-                </span>
-              )}
-            </p>
-            <button
-              onClick={handleApproveConfirm}
-              className="w-full bg-[#4400B8] text-white py-3 px-6 rounded-lg hover:bg-[#4400B8]/90 transition-colors"
-            >
-              Approve Payment
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Reject Confirmation Modal */}
+      {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full space-y-6">
-            <div className="flex justify-between items-start">
-              <h3 className="text-xl font-semibold text-red-600">
-                Confirm Payment Rejection?
-              </h3>
-              <button
-                onClick={() => setShowRejectModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
                 <svg
-                  className="w-5 h-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+                  className="h-6 w-6 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
                 >
                   <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
-              </button>
+              </div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900 mt-5">
+                Reject Submission
+              </h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500 mb-4">
+                  Please provide a reason for rejecting this submission:
+                </p>
+                <textarea
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                  rows={3}
+                  placeholder="Enter rejection reason..."
+                />
+              </div>
+              <div className="items-center px-4 py-3">
+                <button
+                  onClick={handleRejectConfirm}
+                  disabled={!rejectionReason.trim()}
+                  className="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={() => {
+                    setShowRejectModal(false);
+                    setRejectionReason("");
+                  }}
+                  className="mt-3 px-4 py-2 bg-white text-gray-500 text-base font-medium rounded-md w-full shadow-sm border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-            <p className="text-sm text-gray-600">
-              Are you sure you want to reject this payment? Please provide a
-              reason below. The bank will be notified and asked to correct their
-              submission.
-              {isRevisedReport() && (
-                <span className="block mt-2 font-medium">
-                  Note: This is already a revised report.
-                </span>
-              )}
-            </p>
-            <textarea
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Enter reason for rejection..."
-              className="w-full h-24 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-600/20 focus:border-red-600 resize-none"
-            />
-            <button
-              onClick={handleRejectConfirm}
-              disabled={!rejectionReason.trim()}
-              className={`w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors ${
-                !rejectionReason.trim() ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              Reject Payment
-            </button>
           </div>
         </div>
       )}
