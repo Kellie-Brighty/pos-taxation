@@ -24,6 +24,7 @@ export interface POSAgent {
   phoneNumber: string;
   businessName: string;
   businessAddress: string;
+  tin?: string; // Tax Identification Number
   createdAt: string;
   status?: string;
   bankId?: string;
@@ -68,6 +69,7 @@ export const POSAgentProvider: React.FC<{ children: ReactNode }> = ({
               phoneNumber: data.phoneNumber,
               businessName: data.businessName,
               businessAddress: data.businessAddress,
+              tin: data.tin,
               createdAt:
                 data.createdAt?.toDate().toISOString() ||
                 new Date().toISOString(),

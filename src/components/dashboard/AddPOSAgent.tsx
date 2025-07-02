@@ -24,6 +24,7 @@ const AddPOSAgent: React.FC = () => {
     businessName: "JD POS Service",
     phoneNumber: "+ 234 81 3749 6017",
     email: "johndoe@gmail.com",
+    tin: "12345678901", // Tax Identification Number
     businessRegNumber: "BN1234567",
     businessAddress: "15, Bank Street, Akure, Ondo State",
   });
@@ -48,6 +49,7 @@ const AddPOSAgent: React.FC = () => {
       !formData.fullName ||
       !formData.businessName ||
       !formData.phoneNumber ||
+      !formData.tin ||
       !formData.businessAddress
     ) {
       setFormError("Please fill in all required fields");
@@ -239,6 +241,29 @@ const AddPOSAgent: React.FC = () => {
             }
           />
         </div>
+
+        {/* Tax Identification Number */}
+        <InputField
+          id="tin"
+          name="tin"
+          value={formData.tin}
+          onChange={handleChange}
+          label="Tax Identification Number (TIN)"
+          required={true}
+          icon={
+            <svg
+              className="h-5 w-5 text-gray-400"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h2zm4-3a1 1 0 00-1 1v1h2V4a1 1 0 00-1-1zM7 8a1 1 0 000 2h6a1 1 0 100-2H7z"
+                clipRule="evenodd"
+              />
+            </svg>
+          }
+        />
 
         {/* Business Registration Number */}
         <InputField
